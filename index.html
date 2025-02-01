@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --text-color: #1f2937;
+            --code-bg: #f3f4f6;
+            --border-color: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: #ffffff;
+        }
+
+        .navbar {
+            background: var(--primary-color);
+            padding: 1rem 2rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar h1 {
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            display: flex;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #f8fafc;
+            padding: 2rem;
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        .sidebar a:hover {
+            color: var(--primary-color);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            margin-left: 250px;
+        }
+
+        .endpoint {
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2rem;
+        }
+
+        .endpoint h2 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        .get { background: #dbeafe; color: #1e40af; }
+        .post { background: #dcfce7; color: #166534; }
+        .put { background: #fef3c7; color: #92400e; }
+        .delete { background: #fee2e2; color: #991b1b; }
+
+        .endpoint-url {
+            background: var(--code-bg);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 1rem 0;
+        }
+
+        .parameters {
+            margin: 1.5rem 0;
+        }
+
+        .parameters h3, .response h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+
+        th {
+            background: #f8fafc;
+        }
+
+        .response-example {
+            background: var(--code-bg);
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: static;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Your API Documentation</h1>
+    </nav>
+
+    <div class="container">
+        <div class="sidebar">
+            <h3>Endpoints</h3>
+            <ul>
+                <li><a href="#authentication">Authentication</a></li>
+                <li><a href="#users">Users</a></li>
+                <li><a href="#products">Products</a></li>
+                <li><a href="#orders">Orders</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <section id="authentication" class="endpoint">
+                <h2>Authentication</h2>
+                
+                <div class="endpoint-details">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-url">/api/v1/auth/login</span>
+                    
+                    <div class="parameters">
+                        <h3>Parameters</h3>
+                        <table>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                            <tr>
+                                <td>email</td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>User's email address</td>
+                            </tr>
+                            <tr>
+                                <td>password</td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>User's password</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="response">
+                        <h3>Response</h3>
+                        <div class="response-example">
+{
+    "status": "success",
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+            "id": 1,
+            "email": "user@example.com",
+            "name": "John Doe"
+        }
+    }
+}</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="users" class="endpoint">
+                <h2>Users</h2>
+                
+                <div class="endpoint-details">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-url">/api/v1/users</span>
+                    
+                    <div class="parameters">
+                        <h3>Query Parameters</h3>
+                        <table>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                            <tr>
+                                <td>page</td>
+                                <td>integer</td>
+                                <td>No</td>
+                                <td>Page number for pagination</td>
+                            </tr>
+                            <tr>
+                                <td>limit</td>
+                                <td>integer</td>
+                                <td>No</td>
+                                <td>Number of items per page</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="response">
+                        <h3>Response</h3>
+                        <div class="response-example">
+{
+    "status": "success",
+    "data": {
+        "users": [
+            {
+                "id": 1,
+                "name": "John Doe",
+                "email": "john@example.com",
+                "created_at": "2024-01-20T10:00:00Z"
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "total_pages": 5,
+            "total_items": 100
+        }
+    }
+}</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="products" class="endpoint">
+                <h2>Products</h2>
+                
+                <div class="endpoint-details">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-url">/api/v1/products</span>
+                    
+                    <div class="parameters">
+                        <h3>Parameters</h3>
+                        <table>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                            <tr>
+                                <td>name</td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>Product name</td>
+                            </tr>
+                            <tr>
+                                <td>price</td>
+                                <td>number</td>
+                                <td>Yes</td>
+                                <td>Product price</td>
+                            </tr>
+                            <tr>
+                                <td>description</td>
+                                <td>string</td>
+                                <td>No</td>
+                                <td>Product description</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="response">
+                        <h3>Response</h3>
+                        <div class="response-example">
+{
+    "status": "success",
+    "data": {
+        "product": {
+            "id": 1,
+            "name": "Premium Widget",
+            "price": 99.99,
+            "description": "High-quality widget",
+            "created_at": "2024-01-20T10:00:00Z"
+        }
+    }
+}</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="orders" class="endpoint">
+                <h2>Orders</h2>
+                
+                <div class="endpoint-details">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-url">/api/v1/orders/{order_id}</span>
+                    
+                    <div class="parameters">
+                        <h3>Path Parameters</h3>
+                        <table>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                            <tr>
+                                <td>order_id</td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>Unique order identifier</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="response">
+                        <h3>Response</h3>
+                        <div class="response-example">
+{
+    "status": "success",
+    "data": {
+        "order": {
+            "id": "ord_123456",
+            "user_id": 1,
+            "total": 299.97,
+            "status": "completed",
+            "items": [
+                {
+                    "product_id": 1,
+                    "quantity": 3,
+                    "price": 99.99
+                }
+            ],
+            "created_at": "2024-01-20T10:00:00Z"
+        }
+    }
+}</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+</html> 

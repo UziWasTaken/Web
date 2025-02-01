@@ -1,0 +1,17 @@
+{
+    "version": 2,
+    "routes": [
+        {
+            "src": "/api/v1/users",
+            "dest": "/api/users.js"
+        },
+        {
+            "src": "/api/v1/products",
+            "dest": "/api/products.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
+        }
+    ]
+} 

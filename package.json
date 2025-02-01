@@ -1,0 +1,14 @@
+{
+    "name": "your-api",
+    "version": "1.0.0",
+    "description": "Your API Documentation and Implementation",
+    "main": "index.js",
+    "dependencies": {
+        "mongodb": "^4.1.0",
+        "cors": "^2.8.5"
+    },
+    "scripts": {
+        "dev": "vercel dev",
+        "deploy": "vercel deploy --prod"
+    }
+} 
