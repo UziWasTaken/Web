@@ -196,30 +196,6 @@
             cursor: pointer;
         }
 
-        .download-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            background: #10b981;
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            width: 100%;
-            border: none;
-            cursor: pointer;
-            margin-top: 1rem;
-        }
-
-        .download-btn:hover {
-            background: #059669;
-            transform: translateY(-2px);
-        }
-
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -240,7 +216,7 @@
     <!-- Music Controls -->
     <div class="music-controls">
         <button class="music-btn" id="playPauseBtn">
-            <i class="fas fa-play" id="playPauseIcon"></i>
+            <i class="fas fa-pause" id="playPauseIcon"></i>
         </button>
         <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
     </div>
@@ -259,10 +235,6 @@
                 <i class="fab fa-discord"></i>
                 Join Discord to Purchase
             </a>
-            <a href="/assets/Byte.zip" download class="download-btn">
-                <i class="fas fa-download"></i>
-                Download Byte
-            </a>
         </div>
 
         <div class="features">
@@ -278,7 +250,7 @@
     </div>
 
     <script>
-        // Simple particle effect
+        // Particle effect
         const particlesContainer = document.getElementById('particles');
         
         function createParticle() {
@@ -290,14 +262,12 @@
             particle.style.borderRadius = '50%';
             particle.style.pointerEvents = 'none';
             
-            // Random starting position
             const startX = Math.random() * window.innerWidth;
             const startY = Math.random() * window.innerHeight;
             
             particle.style.left = `${startX}px`;
             particle.style.top = `${startY}px`;
             
-            // Animation
             particle.animate([
                 { transform: 'translateY(0) scale(1)', opacity: 1 },
                 { transform: 'translateY(-100px) scale(0)', opacity: 0 }
@@ -308,13 +278,11 @@
             
             particlesContainer.appendChild(particle);
             
-            // Remove particle after animation
             setTimeout(() => {
                 particle.remove();
             }, 5000);
         }
 
-        // Create particles periodically
         setInterval(createParticle, 100);
 
         // Music Controls
@@ -323,8 +291,14 @@
         const playPauseIcon = document.getElementById('playPauseIcon');
         const volumeSlider = document.getElementById('volumeSlider');
 
-        // Set initial volume
+        // Set initial volume and play
         audio.volume = volumeSlider.value / 100;
+        audio.play().catch(() => {
+            // If autoplay fails, we'll wait for user interaction
+            document.addEventListener('click', () => {
+                audio.play();
+            }, { once: true });
+        });
 
         // Play/Pause functionality
         playPauseBtn.addEventListener('click', () => {
@@ -343,15 +317,6 @@
         volumeSlider.addEventListener('input', (e) => {
             audio.volume = e.target.value / 100;
         });
-
-        // Auto-play on user interaction
-        document.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.play();
-                playPauseIcon.classList.remove('fa-play');
-                playPauseIcon.classList.add('fa-pause');
-            }
-        }, { once: true });
     </script>
 </body>
 </html> 
