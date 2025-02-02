@@ -149,6 +149,77 @@
             pointer-events: none;
         }
 
+        .music-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(30, 41, 59, 0.7);
+            padding: 10px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+        }
+
+        .music-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .music-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .volume-slider {
+            width: 80px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background: #10b981;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            width: 100%;
+            border: none;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .download-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -166,6 +237,19 @@
     <div class="gradient-bg"></div>
     <div class="particles" id="particles"></div>
     
+    <!-- Music Controls -->
+    <div class="music-controls">
+        <button class="music-btn" id="playPauseBtn">
+            <i class="fas fa-play" id="playPauseIcon"></i>
+        </button>
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="bgMusic" loop>
+        <source src="/assets/background-music.mp3" type="audio/mp3">
+    </audio>
+    
     <div class="container">
         <h1 class="logo">BYTE</h1>
         <p class="subtitle">Ultimate BladeBall Script</p>
@@ -174,6 +258,10 @@
             <a href="https://discord.gg/CUcRgdEVZv" class="discord-btn" target="_blank">
                 <i class="fab fa-discord"></i>
                 Join Discord to Purchase
+            </a>
+            <a href="/assets/Byte.zip" download class="download-btn">
+                <i class="fas fa-download"></i>
+                Download Byte
             </a>
         </div>
 
@@ -228,6 +316,42 @@
 
         // Create particles periodically
         setInterval(createParticle, 100);
+
+        // Music Controls
+        const audio = document.getElementById('bgMusic');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const volumeSlider = document.getElementById('volumeSlider');
+
+        // Set initial volume
+        audio.volume = volumeSlider.value / 100;
+
+        // Play/Pause functionality
+        playPauseBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playPauseIcon.classList.remove('fa-play');
+                playPauseIcon.classList.add('fa-pause');
+            } else {
+                audio.pause();
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+            }
+        });
+
+        // Volume control
+        volumeSlider.addEventListener('input', (e) => {
+            audio.volume = e.target.value / 100;
+        });
+
+        // Auto-play on user interaction
+        document.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playPauseIcon.classList.remove('fa-play');
+                playPauseIcon.classList.add('fa-pause');
+            }
+        }, { once: true });
     </script>
 </body>
 </html> 
