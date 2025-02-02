@@ -13,5 +13,13 @@
             "src": "/(.*)",
             "dest": "/index.html"
         }
-    ]
+    ],
+    "builds": [
+        {
+            "src": "package.json",
+            "use": "@vercel/next"
+        }
+    ],
+    "buildCommand": "next build",
+    "outputDirectory": ".next"
 } 
