@@ -1,26 +1,47 @@
 import { useState, useEffect } from 'react';
-import { auth } from '../lib/firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { FiSettings, FiExternalLink } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { FaDiscord } from 'react-icons/fa';
 import { SiRoblox } from 'react-icons/si';
+
+// Initialize Firebase
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || ''
+};
+
+// Initialize Firebase only on client side
+let auth = null;
+if (typeof window !== 'undefined') {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+}
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-    });
-    return () => unsubscribe();
+    if (auth) {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
   }, []);
 
   const signInWithGoogle = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      if (auth) {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      }
     } catch (error) {
       console.error('Error signing in with Google:', error);
     }
@@ -28,7 +49,9 @@ export default function Home() {
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      if (auth) {
+        await signOut(auth);
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }
