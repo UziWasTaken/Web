@@ -12,8 +12,13 @@
     ],
     "routes": [
         {
-            "src": "/auth/callback",
-            "dest": "/auth/index.html"
+            "src": "/api/gallery/(.*)",
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
+            "dest": "/api/gallery.js"
         },
         {
             "src": "/api/auth/(.*)",
@@ -26,9 +31,6 @@
         },
         {
             "src": "/gallery",
-            "headers": {
-                "Cache-Control": "s-maxage=1, stale-while-revalidate"
-            },
             "dest": "/gallery/index.html"
         },
         {
