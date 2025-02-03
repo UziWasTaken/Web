@@ -12,8 +12,20 @@
             "dest": "/api/youtube.js"
         },
         {
-            "src": "/tools",
-            "dest": "/tools.html"
+            "src": "/gallery",
+            "dest": "/gallery/index.html"
+        },
+        {
+            "src": "/bytescript",
+            "dest": "/bytescript/index.html"
+        },
+        {
+            "src": "/projects",
+            "dest": "/projects/index.html"
+        },
+        {
+            "src": "/about",
+            "dest": "/about/index.html"
         },
         {
             "src": "/(.*)",
