@@ -2,6 +2,10 @@
     "version": 2,
     "routes": [
         {
+            "src": "/tools",
+            "dest": "/tools.html"
+        },
+        {
             "src": "/assets/(.*)",
             "dest": "/assets/$1"
         },

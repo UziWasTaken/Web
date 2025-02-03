@@ -207,12 +207,67 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #ffffff;
+        }
+
+        .nav-link.active {
+            color: #6366f1;
+        }
+
+        .container {
+            padding-top: 5rem;
+        }
     </style>
 </head>
 <body>
     <div class="gradient-bg"></div>
     <div class="particles" id="particles"></div>
     
+    <nav class="navbar">
+        <a href="/" class="nav-logo">BYTE</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link active">Home</a>
+            <a href="/tools" class="nav-link">Tools</a>
+        </div>
+    </nav>
+
     <!-- Music Controls -->
     <div class="music-controls">
         <button class="music-btn" id="playPauseBtn">
