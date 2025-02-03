@@ -3,7 +3,7 @@
     "builds": [
         {
             "src": "api/**/*.js",
-            "use": "@vercel/node@latest"
+            "use": "@vercel/node"
         },
         {
             "src": "**/*.html",
@@ -12,49 +12,11 @@
     ],
     "routes": [
         {
-            "src": "/api/auth/signup",
-            "methods": ["POST", "OPTIONS"],
+            "src": "/api/auth/(.*)",
             "dest": "/api/auth.js"
-        },
-        {
-            "src": "/api/auth/signin",
-            "methods": ["POST", "OPTIONS"],
-            "dest": "/api/auth.js"
-        },
-        {
-            "src": "/api/auth/signout",
-            "methods": ["POST", "OPTIONS"],
-            "dest": "/api/auth.js"
-        },
-        {
-            "src": "/api/auth/user",
-            "methods": ["GET", "OPTIONS"],
-            "dest": "/api/auth.js"
-        },
-        {
-            "src": "/api/gallery/upload",
-            "methods": ["POST", "OPTIONS"],
-            "dest": "/api/gallery.js"
-        },
-        {
-            "src": "/api/gallery/images",
-            "methods": ["GET", "OPTIONS"],
-            "dest": "/api/gallery.js"
-        },
-        {
-            "src": "/api/gallery/delete",
-            "methods": ["DELETE", "OPTIONS"],
-            "dest": "/api/gallery.js"
-        },
-        {
-            "handle": "filesystem"
         },
         {
             "src": "/gallery",
-            "dest": "/gallery/index.html"
-        },
-        {
-            "src": "/gallery/",
             "dest": "/gallery/index.html"
         },
         {
@@ -62,15 +24,7 @@
             "dest": "/bytescript/index.html"
         },
         {
-            "src": "/bytescript/",
-            "dest": "/bytescript/index.html"
-        },
-        {
             "src": "/projects",
-            "dest": "/projects/index.html"
-        },
-        {
-            "src": "/projects/",
             "dest": "/projects/index.html"
         },
         {
@@ -78,20 +32,16 @@
             "dest": "/about/index.html"
         },
         {
-            "src": "/about/",
-            "dest": "/about/index.html"
-        },
-        {
             "src": "/auth",
-            "dest": "/auth/index.html"
-        },
-        {
-            "src": "/auth/",
             "dest": "/auth/index.html"
         },
         {
             "src": "/(.*)",
             "dest": "/index.html"
         }
-    ]
+    ],
+    "env": {
+        "NEXT_PUBLIC_SUPABASE_URL": "https://wxyrrhgxrtrmpqmrljih.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg"
+    }
 } 
