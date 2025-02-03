@@ -563,10 +563,14 @@
                 galleryGrid.innerHTML = '';
 
                 if (data.images && Array.isArray(data.images)) {
-                    data.images.forEach(image => {
+                    data.images.forEach(async image => {
                         const item = document.createElement('div');
                         item.className = 'gallery-item';
-                        const isOwner = image.user_id === (supabaseClient.auth.user()?.id || '');
+                        
+                        // Get current user
+                        const { data: { user } } = await supabaseClient.auth.getUser();
+                        const isOwner = image.user_id === (user?.id || '');
+                        
                         item.innerHTML = `
                             <img src="${image.url}" alt="Gallery item">
                             <div class="tags">

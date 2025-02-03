@@ -119,6 +119,12 @@ module.exports = async (req, res) => {
                 const tags = JSON.parse(formData.fields.tags || '[]');
                 const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
+                // Get the current user's ID
+                const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+                if (userError || !user) {
+                    throw new Error('Failed to get user information');
+                }
+
                 // Upload to Supabase Storage
                 const { error: uploadError } = await supabase.storage
                     .from('gallery')
@@ -136,21 +142,22 @@ module.exports = async (req, res) => {
                     .from('gallery')
                     .getPublicUrl(`public/${filename}`);
 
-                // Store in database
+                // Store in database with explicit user_id
                 const { data: image, error: dbError } = await supabase
                     .from('images')
                     .insert([{
                         filename,
                         url: publicUrl,
                         tags,
-                        user_id: user.id,
+                        user_id: user.id,  // Make sure this matches the authenticated user's ID
                         created_at: new Date().toISOString()
                     }])
                     .select()
                     .single();
 
                 if (dbError) {
-                    throw dbError;
+                    console.error('Database error:', dbError);
+                    throw new Error(dbError.message);
                 }
 
                 return res.status(200).json({
