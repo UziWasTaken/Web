@@ -329,13 +329,18 @@
 
                 // Store session data
                 localStorage.setItem('supabase.auth.token', data.session.access_token);
+                localStorage.setItem('supabase.auth.refresh_token', data.session.refresh_token);
+                const expiresAt = Date.now() + data.session.expires_in * 1000;
+                localStorage.setItem('supabase.auth.expires_at', expiresAt.toString());
                 
                 successEl.textContent = 'Successfully signed in!';
                 successEl.classList.add('active');
                 errorEl.classList.remove('active');
 
-                // Redirect to gallery
-                window.location.href = '/gallery';
+                // Redirect to gallery after showing success message
+                setTimeout(() => {
+                    window.location.replace('/gallery');
+                }, 1000);
 
             } catch (error) {
                 console.error('Sign in error:', error);
@@ -422,30 +427,54 @@
         }
 
         // Check if we're already logged in and not on a callback URL
-        function checkExistingSession() {
+        async function checkExistingSession() {
             const token = localStorage.getItem('supabase.auth.token');
             const expiresAt = localStorage.getItem('supabase.auth.expires_at');
             
-            if (token && expiresAt) {
+            if (!token || !expiresAt) return;
+
+            try {
                 // Check if token is expired
-                if (Date.now() < parseInt(expiresAt)) {
-                    // Only redirect if we're not processing a callback
-                    if (!window.location.hash && !window.location.search.includes('error')) {
-                        window.location.href = '/gallery';
-                    }
-                } else {
+                if (Date.now() >= parseInt(expiresAt)) {
                     // Clear expired tokens
                     localStorage.removeItem('supabase.auth.token');
                     localStorage.removeItem('supabase.auth.refresh_token');
                     localStorage.removeItem('supabase.auth.expires_at');
+                    return;
                 }
+
+                // Verify token with Supabase
+                const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+                
+                if (error) {
+                    throw error;
+                }
+
+                // Only redirect if we're not processing a callback and we're on the auth page
+                if (!window.location.hash && 
+                    !window.location.search.includes('error') && 
+                    window.location.pathname === '/auth') {
+                    window.location.replace('/gallery');
+                }
+            } catch (error) {
+                console.error('Session check error:', error);
+                // Clear invalid session
+                localStorage.removeItem('supabase.auth.token');
+                localStorage.removeItem('supabase.auth.refresh_token');
+                localStorage.removeItem('supabase.auth.expires_at');
             }
         }
 
         // Initialize auth handling
         async function initAuth() {
-            await handleAuthRedirect();
-            checkExistingSession();
+            // Only handle auth redirect if we have a hash or error
+            if (window.location.hash || window.location.search.includes('error')) {
+                await handleAuthRedirect();
+            }
+            // Only check session if we're on the auth page
+            if (window.location.pathname === '/auth') {
+                await checkExistingSession();
+            }
         }
 
         // Start auth handling
