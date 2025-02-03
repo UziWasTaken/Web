@@ -102,10 +102,15 @@ module.exports = async (req, res) => {
             }
 
             // Ensure all images have correct URLs
-            const processedImages = images?.map(image => ({
-                ...image,
-                url: image.url.startsWith('http') ? image.url : `${supabaseUrl}/storage/v1/object/public/gallery/public/${image.filename}`
-            })) || [];
+            const processedImages = images?.map(image => {
+                if (!image.url || !image.url.startsWith('http')) {
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('gallery')
+                        .getPublicUrl(`public/${image.filename}`);
+                    return { ...image, url: publicUrl };
+                }
+                return image;
+            }) || [];
 
             console.log('Found images:', processedImages.length, 'Total count:', count);
 
@@ -149,8 +154,14 @@ module.exports = async (req, res) => {
                     throw uploadError;
                 }
 
-                // Get public URL - using the correct path construction
-                const publicUrl = `${supabaseUrl}/storage/v1/object/public/gallery/public/${filename}`;
+                // Get public URL using Supabase's getPublicUrl method
+                const { data: { publicUrl } } = supabase.storage
+                    .from('gallery')
+                    .getPublicUrl(`public/${filename}`);
+
+                if (!publicUrl) {
+                    throw new Error('Failed to generate public URL for uploaded image');
+                }
 
                 // Store in database with explicit user_id
                 const { data: image, error: dbError } = await supabase
