@@ -232,31 +232,70 @@
         const urlInput = document.getElementById('urlInput');
         const downloadBtn = document.getElementById('downloadBtn');
         const statusText = document.getElementById('statusText');
+        const controlBtns = document.querySelectorAll('.control-btn');
 
         urlInput.addEventListener('input', () => {
             const url = urlInput.value.trim();
             downloadBtn.disabled = !url;
         });
 
-        downloadBtn.addEventListener('click', () => {
+        async function downloadAudio(url, quality) {
+            try {
+                statusText.textContent = 'Starting download...';
+                
+                // Create a hidden iframe for download
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                // Build the API URL with parameters
+                const apiUrl = `/api/download?url=${encodeURIComponent(url)}&quality=${quality}`;
+                
+                // Navigate iframe to download URL
+                iframe.src = apiUrl;
+
+                // Remove iframe after download starts
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                    statusText.textContent = 'Download started!';
+                    downloadBtn.disabled = false;
+                    urlInput.value = '';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Download error:', error);
+                statusText.textContent = 'Download failed. Please try again.';
+                downloadBtn.disabled = false;
+            }
+        }
+
+        downloadBtn.addEventListener('click', async () => {
             const url = urlInput.value.trim();
             if (!url) return;
 
             statusText.textContent = 'Processing...';
             downloadBtn.disabled = true;
 
-            // Simulate processing
-            setTimeout(() => {
-                statusText.textContent = 'Audio downloaded successfully!';
-                downloadBtn.disabled = false;
-                urlInput.value = '';
-            }, 2000);
+            // Get selected quality
+            const isHighQuality = document.querySelector('.control-btn:nth-child(2)').classList.contains('active');
+            const quality = isHighQuality ? 'high' : 'low';
+
+            await downloadAudio(url, quality);
         });
 
         // Toggle control buttons
-        document.querySelectorAll('.control-btn').forEach(btn => {
+        controlBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                btn.classList.toggle('active');
+                // If clicking High Quality button
+                if (btn === controlBtns[1]) {
+                    controlBtns[2].classList.remove('active'); // Deactivate Fast Download
+                    btn.classList.toggle('active');
+                }
+                // If clicking Fast Download button
+                else if (btn === controlBtns[2]) {
+                    controlBtns[1].classList.remove('active'); // Deactivate High Quality
+                    btn.classList.toggle('active');
+                }
             });
         });
     </script>

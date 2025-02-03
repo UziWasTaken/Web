@@ -1,0 +1,14 @@
+{
+  "name": "youtube-audio-downloader",
+  "version": "1.0.0",
+  "description": "YouTube audio downloader with quality options",
+  "main": "index.js",
+  "scripts": {
+    "start": "vercel dev",
+    "deploy": "vercel deploy --prod"
+  },
+  "dependencies": {
+    "ytdl-core": "^4.11.5",
+    "fluent-ffmpeg": "^2.1.2"
+  }
+} 
