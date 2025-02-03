@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Authentication - r34cat.online</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -296,6 +297,35 @@
             }
         }
 
+        // Check for tokens in URL hash
+        function getHashParams() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const result = {};
+            for (const [key, value] of params) {
+                result[key] = value;
+            }
+            return result;
+        }
+
+        // Handle URL parameters and hash
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = getHashParams();
+        
+        // Check for access token in hash
+        if (hashParams.access_token) {
+            localStorage.setItem('supabase.auth.token', hashParams.access_token);
+            window.location.href = '/gallery';
+        }
+        // Check for error in query params
+        else if (urlParams.get('error')) {
+            const error = urlParams.get('error');
+            const errorDescription = urlParams.get('error_description');
+            const errorEl = document.getElementById('signinError');
+            errorEl.textContent = errorDescription || error;
+            errorEl.classList.add('active');
+        }
+
         async function handleSignIn(event) {
             event.preventDefault();
             const form = event.target;
@@ -304,65 +334,54 @@
             const submitBtn = form.querySelector('button[type="submit"]');
 
             try {
-                // Disable submit button while processing
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Signing in...';
 
                 const email = form.querySelector('input[type="email"]').value.trim();
                 const password = form.querySelector('input[type="password"]').value;
 
-                // Basic validation
-                if (!email || !password) {
-                    throw new Error('Email and password are required');
-                }
+                // Create Supabase client
+                const supabase = createClient(
+                    'https://wxyrrhgxrtrmpqmrljih.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg'
+                );
 
-                const response = await fetch('/api/auth/signin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
+                // Sign in with Supabase directly
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
                 });
 
-                const data = await response.json();
+                if (error) throw error;
 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to sign in');
+                if (!data.session) {
+                    throw new Error('No session returned from Supabase');
                 }
 
-                if (!data.session || !data.user) {
-                    throw new Error('Invalid response from server');
-                }
-
-                // Store session
-                localStorage.setItem('session', JSON.stringify(data.session));
-                localStorage.setItem('user', JSON.stringify(data.user));
-
-                // Show success message
+                // Store session data
+                localStorage.setItem('supabase.auth.token', data.session.access_token);
+                
                 successEl.textContent = 'Successfully signed in!';
                 successEl.classList.add('active');
                 errorEl.classList.remove('active');
 
-                // Redirect after successful sign in
-                setTimeout(() => {
-                    window.location.href = '/gallery';
-                }, 1000);
+                // Redirect to gallery
+                window.location.href = '/gallery';
 
             } catch (error) {
+                console.error('Sign in error:', error);
                 errorEl.textContent = error.message;
                 errorEl.classList.add('active');
                 successEl.classList.remove('active');
             } finally {
-                // Re-enable submit button
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Sign In';
             }
         }
 
         // Check if we're already logged in
-        const session = localStorage.getItem('session');
-        const user = localStorage.getItem('user');
-        if (session && user) {
+        const token = localStorage.getItem('supabase.auth.token');
+        if (token) {
             window.location.href = '/gallery';
         }
     </script>

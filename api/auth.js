@@ -13,9 +13,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
-        flowType: 'implicit',
-        redirectTo: `${siteUrl}/auth/callback`
+        detectSessionInUrl: true
     }
 });
 
@@ -24,16 +22,17 @@ console.log('Supabase URL:', supabaseUrl);
 console.log('Supabase Key present:', !!supabaseKey);
 
 module.exports = async (req, res) => {
-    try {
-        // Enable CORS
-        if (req.method === 'OPTIONS') {
-            res.setHeader('Access-Control-Allow-Credentials', true);
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,DELETE');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-            return res.status(200).end();
-        }
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    try {
         // Handle signup
         if (req.method === 'POST' && req.url.includes('/signup')) {
             const { email, password, username } = req.body;
@@ -48,41 +47,13 @@ module.exports = async (req, res) => {
                 email,
                 password,
                 options: {
-                    data: { username },
-                    emailRedirectTo: `${siteUrl}/auth/callback`
+                    data: { username }
                 }
             });
 
             if (error) throw error;
 
-            return res.status(200).json({
-                data,
-                redirectTo: `${siteUrl}/auth/callback`
-            });
-        }
-
-        // Handle callback
-        if (req.method === 'GET' && req.url.includes('/callback')) {
-            // Extract access token from hash or query parameters
-            const accessToken = req.query.access_token || req.headers.authorization?.replace('Bearer ', '');
-            
-            if (!accessToken) {
-                return res.redirect(`${siteUrl}/auth?error=no_access_token`);
-            }
-
-            try {
-                const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-                
-                if (error) throw error;
-
-                // Set session cookie
-                res.setHeader('Set-Cookie', `sb-access-token=${accessToken}; Path=/; HttpOnly; Secure; SameSite=Lax`);
-                
-                // Redirect to gallery
-                return res.redirect(`${siteUrl}/gallery`);
-            } catch (error) {
-                return res.redirect(`${siteUrl}/auth?error=${error.message}`);
-            }
+            return res.status(200).json({ data });
         }
 
         // Handle signin
@@ -95,34 +66,74 @@ module.exports = async (req, res) => {
                 });
             }
 
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-                options: {
-                    redirectTo: `${siteUrl}/auth/callback`
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+
+                if (!data.session) {
+                    throw new Error('No session returned from Supabase');
                 }
-            });
 
-            if (error) throw error;
+                // Set auth cookie
+                const { access_token, refresh_token } = data.session;
+                res.setHeader('Set-Cookie', [
+                    `sb-access-token=${access_token}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+                    `sb-refresh-token=${refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax`
+                ]);
 
-            return res.status(200).json({
-                data,
-                redirectTo: `${siteUrl}/auth/callback`
-            });
+                return res.status(200).json({
+                    user: data.user,
+                    session: data.session
+                });
+            } catch (error) {
+                console.error('Sign in error:', error);
+                return res.status(401).json({
+                    error: error.message
+                });
+            }
+        }
+
+        // Handle callback from email verification
+        if (req.method === 'GET' && req.url.includes('/callback')) {
+            const hashParams = new URLSearchParams(req.url.split('#')[1] || '');
+            const queryParams = new URLSearchParams(req.url.split('?')[1] || '');
+            
+            const access_token = hashParams.get('access_token') || queryParams.get('access_token');
+            const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+            const error = hashParams.get('error') || queryParams.get('error');
+            const error_description = hashParams.get('error_description') || queryParams.get('error_description');
+
+            if (error) {
+                return res.redirect(`/auth?error=${error}&error_description=${error_description}`);
+            }
+
+            if (!access_token) {
+                return res.redirect('/auth?error=no_access_token');
+            }
+
+            // Set auth cookies
+            res.setHeader('Set-Cookie', [
+                `sb-access-token=${access_token}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+                refresh_token ? `sb-refresh-token=${refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax` : ''
+            ].filter(Boolean));
+
+            return res.redirect('/gallery');
         }
 
         // Handle signout
         if (req.method === 'POST' && req.url.includes('/signout')) {
-            // Clear session cookie
-            res.setHeader('Set-Cookie', 'sb-access-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+            // Clear auth cookies
+            res.setHeader('Set-Cookie', [
+                'sb-access-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+                'sb-refresh-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+            ]);
             
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-
-            return res.status(200).json({
-                success: true,
-                redirectTo: `${siteUrl}/auth`
-            });
+            await supabase.auth.signOut();
+            return res.status(200).json({ success: true });
         }
 
         // Handle get user
@@ -137,7 +148,11 @@ module.exports = async (req, res) => {
 
             const { data: { user }, error } = await supabase.auth.getUser(token);
 
-            if (error) throw error;
+            if (error) {
+                return res.status(401).json({
+                    error: error.message
+                });
+            }
 
             return res.status(200).json({ user });
         }
@@ -148,9 +163,9 @@ module.exports = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error:', error.message);
-        return res.status(error.status || 500).json({
-            error: error.message
+        console.error('Auth error:', error);
+        return res.status(500).json({
+            error: error.message || 'Internal server error'
         });
     }
 }; 
