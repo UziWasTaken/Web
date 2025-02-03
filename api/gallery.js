@@ -165,6 +165,59 @@ module.exports = async (req, res) => {
             }
         }
 
+        // Handle DELETE request (delete image)
+        if (req.method === 'DELETE') {
+            try {
+                const imageId = req.url.split('/').pop();
+                
+                // First, get the image details to verify ownership
+                const { data: image, error: fetchError } = await supabase
+                    .from('images')
+                    .select('*')
+                    .eq('id', imageId)
+                    .single();
+
+                if (fetchError) {
+                    throw fetchError;
+                }
+
+                if (!image) {
+                    return res.status(404).json({ error: 'Image not found' });
+                }
+
+                // Verify ownership
+                if (image.user_id !== user.id) {
+                    return res.status(403).json({ error: 'You can only delete your own images' });
+                }
+
+                // Delete from storage
+                const { error: storageError } = await supabase.storage
+                    .from('gallery')
+                    .remove([`public/${image.filename}`]);
+
+                if (storageError) {
+                    throw storageError;
+                }
+
+                // Delete from database
+                const { error: dbError } = await supabase
+                    .from('images')
+                    .delete()
+                    .eq('id', imageId);
+
+                if (dbError) {
+                    throw dbError;
+                }
+
+                return res.status(200).json({ success: true });
+            } catch (error) {
+                console.error('Delete error:', error);
+                return res.status(500).json({ 
+                    error: error.message || 'Failed to delete image'
+                });
+            }
+        }
+
         // Handle unknown methods
         return res.status(405).json({ error: 'Method not allowed' });
 

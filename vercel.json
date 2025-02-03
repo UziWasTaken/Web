@@ -12,8 +12,13 @@
     ],
     "routes": [
         {
+            "src": "/api/gallery/([^/]+)",
+            "methods": ["DELETE"],
+            "dest": "api/gallery.js"
+        },
+        {
             "src": "/api/gallery",
-            "methods": ["GET", "POST", "OPTIONS", "DELETE"],
+            "methods": ["GET", "POST", "OPTIONS"],
             "dest": "api/gallery.js"
         },
         {
