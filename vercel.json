@@ -6,48 +6,55 @@
             "use": "@vercel/node@latest"
         },
         {
-            "src": "*.html",
+            "src": "**/*.html",
             "use": "@vercel/static"
         }
     ],
     "routes": [
         {
             "src": "/api/auth/signup",
-            "methods": ["POST"],
+            "methods": ["POST", "OPTIONS"],
             "dest": "/api/auth.js"
         },
         {
             "src": "/api/auth/signin",
-            "methods": ["POST"],
+            "methods": ["POST", "OPTIONS"],
             "dest": "/api/auth.js"
         },
         {
             "src": "/api/auth/signout",
-            "methods": ["POST"],
+            "methods": ["POST", "OPTIONS"],
             "dest": "/api/auth.js"
         },
         {
             "src": "/api/auth/user",
-            "methods": ["GET"],
+            "methods": ["GET", "OPTIONS"],
             "dest": "/api/auth.js"
         },
         {
             "src": "/api/gallery/upload",
-            "methods": ["POST"],
+            "methods": ["POST", "OPTIONS"],
             "dest": "/api/gallery.js"
         },
         {
             "src": "/api/gallery/images",
-            "methods": ["GET"],
+            "methods": ["GET", "OPTIONS"],
             "dest": "/api/gallery.js"
         },
         {
             "src": "/api/gallery/delete",
-            "methods": ["DELETE"],
+            "methods": ["DELETE", "OPTIONS"],
             "dest": "/api/gallery.js"
         },
         {
+            "handle": "filesystem"
+        },
+        {
             "src": "/gallery",
+            "dest": "/gallery/index.html"
+        },
+        {
+            "src": "/gallery/",
             "dest": "/gallery/index.html"
         },
         {
@@ -55,7 +62,15 @@
             "dest": "/bytescript/index.html"
         },
         {
+            "src": "/bytescript/",
+            "dest": "/bytescript/index.html"
+        },
+        {
             "src": "/projects",
+            "dest": "/projects/index.html"
+        },
+        {
+            "src": "/projects/",
             "dest": "/projects/index.html"
         },
         {
@@ -63,7 +78,15 @@
             "dest": "/about/index.html"
         },
         {
+            "src": "/about/",
+            "dest": "/about/index.html"
+        },
+        {
             "src": "/auth",
+            "dest": "/auth/index.html"
+        },
+        {
+            "src": "/auth/",
             "dest": "/auth/index.html"
         },
         {
