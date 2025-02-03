@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Authentication - r34cat.online</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -212,6 +212,13 @@
     </div>
 
     <script>
+        // Initialize Supabase client globally
+        const { createClient } = supabase;
+        const supabaseClient = createClient(
+            'https://wxyrrhgxrtrmpqmrljih.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg'
+        );
+
         function switchTab(tab) {
             const tabs = document.querySelectorAll('.tab');
             const signinForm = document.getElementById('signinForm');
@@ -258,14 +265,8 @@
                     throw new Error('Password must be at least 6 characters long');
                 }
 
-                // Create Supabase client
-                const supabase = createClient(
-                    'https://wxyrrhgxrtrmpqmrljih.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg'
-                );
-
-                // Sign up with Supabase directly
-                const { data, error } = await supabase.auth.signUp({
+                // Use the global Supabase client
+                const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
                     options: {
@@ -300,10 +301,58 @@
             }
         }
 
+        async function handleSignIn(event) {
+            event.preventDefault();
+            const form = event.target;
+            const errorEl = document.getElementById('signinError');
+            const successEl = document.getElementById('signinSuccess');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Signing in...';
+
+                const email = form.querySelector('input[type="email"]').value.trim();
+                const password = form.querySelector('input[type="password"]').value;
+
+                // Use the global Supabase client
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+
+                if (!data.session) {
+                    throw new Error('No session returned from Supabase');
+                }
+
+                // Store session data
+                localStorage.setItem('supabase.auth.token', data.session.access_token);
+                
+                successEl.textContent = 'Successfully signed in!';
+                successEl.classList.add('active');
+                errorEl.classList.remove('active');
+
+                // Redirect to gallery
+                window.location.href = '/gallery';
+
+            } catch (error) {
+                console.error('Sign in error:', error);
+                errorEl.textContent = error.message;
+                errorEl.classList.add('active');
+                successEl.classList.remove('active');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        }
+
         // Handle URL parameters and hash
         function handleAuthRedirect() {
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             const error = hashParams.get('error');
+            const error_code = hashParams.get('error_code');
             const error_description = hashParams.get('error_description');
             const access_token = hashParams.get('access_token');
             const refresh_token = hashParams.get('refresh_token');
@@ -343,59 +392,6 @@
 
         // Call handleAuthRedirect on page load
         handleAuthRedirect();
-
-        async function handleSignIn(event) {
-            event.preventDefault();
-            const form = event.target;
-            const errorEl = document.getElementById('signinError');
-            const successEl = document.getElementById('signinSuccess');
-            const submitBtn = form.querySelector('button[type="submit"]');
-
-            try {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Signing in...';
-
-                const email = form.querySelector('input[type="email"]').value.trim();
-                const password = form.querySelector('input[type="password"]').value;
-
-                // Create Supabase client
-                const supabase = createClient(
-                    'https://wxyrrhgxrtrmpqmrljih.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg'
-                );
-
-                // Sign in with Supabase directly
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
-
-                if (error) throw error;
-
-                if (!data.session) {
-                    throw new Error('No session returned from Supabase');
-                }
-
-                // Store session data
-                localStorage.setItem('supabase.auth.token', data.session.access_token);
-                
-                successEl.textContent = 'Successfully signed in!';
-                successEl.classList.add('active');
-                errorEl.classList.remove('active');
-
-                // Redirect to gallery
-                window.location.href = '/gallery';
-
-            } catch (error) {
-                console.error('Sign in error:', error);
-                errorEl.textContent = error.message;
-                errorEl.classList.add('active');
-                successEl.classList.remove('active');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Sign In';
-            }
-        }
 
         // Check if we're already logged in
         const token = localStorage.getItem('supabase.auth.token');
