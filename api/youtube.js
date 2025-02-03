@@ -1,11 +1,5 @@
 const { google } = require('googleapis');
 
-// Initialize YouTube API client
-const youtube = google.youtube({
-    version: 'v3',
-    auth: process.env.YOUTUBE_API_KEY
-});
-
 // Helper function to extract video ID from URL
 function extractVideoId(url) {
     const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
@@ -36,6 +30,18 @@ module.exports = async (req, res) => {
 
     const { url, format } = req.query;
 
+    // Check if API key is available
+    if (!process.env.YOUTUBE_API_KEY) {
+        console.error('YouTube API key is not configured');
+        return res.status(500).json({ error: 'YouTube API key is not configured' });
+    }
+
+    // Initialize YouTube API client
+    const youtube = google.youtube({
+        version: 'v3',
+        auth: process.env.YOUTUBE_API_KEY
+    });
+
     // Handle info request
     if (req.url.includes('/api/youtube/info')) {
         try {
@@ -44,10 +50,14 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ error: 'Invalid YouTube URL' });
             }
 
+            console.log('Fetching video info for ID:', videoId);
+            console.log('Using API key:', process.env.YOUTUBE_API_KEY ? 'Present' : 'Missing');
+
             // Get video details
             const videoResponse = await youtube.videos.list({
                 part: ['snippet', 'contentDetails', 'statistics'],
-                id: [videoId]
+                id: [videoId],
+                key: process.env.YOUTUBE_API_KEY // Explicitly include the API key
             });
 
             if (!videoResponse.data.items.length) {
@@ -77,7 +87,10 @@ module.exports = async (req, res) => {
             return res.status(200).json(response);
         } catch (error) {
             console.error('YouTube API Error:', error);
-            return res.status(500).json({ error: 'Error fetching video information' });
+            return res.status(500).json({ 
+                error: 'Error fetching video information',
+                details: error.message
+            });
         }
     }
 

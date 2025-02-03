@@ -326,6 +326,8 @@
                     ? `http://localhost:3000/api/youtube/info?url=${encodeURIComponent(url)}`
                     : `/api/youtube/info?url=${encodeURIComponent(url)}`;
 
+                console.log('Fetching from:', apiUrl);
+
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
@@ -335,9 +337,10 @@
                 });
 
                 const data = await response.json();
+                console.log('Response:', data);
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Error fetching video information');
+                    throw new Error(data.error + (data.details ? `: ${data.details}` : ''));
                 }
 
                 if (!data || typeof data !== 'object') {
@@ -355,7 +358,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 loading.classList.remove('active');
-                alert(error.message || 'Error fetching video information. Please check your API key and try again.');
+                alert('Error: ' + (error.message || 'Failed to fetch video information. Please check the API key configuration.'));
             }
         }
 
