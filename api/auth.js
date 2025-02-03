@@ -1,4 +1,4 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+const { createClient } = require('@supabase/supabase-js');
 
 // Initialize Supabase client
 const supabaseUrl = 'https://wxyrrhgxrtrmpqmrljih.supabase.co';
@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
     }
 });
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -146,4 +146,4 @@ export default async function handler(req, res) {
             details: error.message
         });
     }
-} 
+}; 
