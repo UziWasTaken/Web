@@ -101,10 +101,16 @@ module.exports = async (req, res) => {
                 throw dbError;
             }
 
-            console.log('Found images:', images?.length || 0, 'Total count:', count);
+            // Ensure all images have correct URLs
+            const processedImages = images?.map(image => ({
+                ...image,
+                url: image.url.startsWith('http') ? image.url : `${supabaseUrl}/storage/v1/object/public/gallery/public/${image.filename}`
+            })) || [];
+
+            console.log('Found images:', processedImages.length, 'Total count:', count);
 
             return res.status(200).json({
-                images: images || [],
+                images: processedImages,
                 page,
                 totalPages: Math.ceil((count || 0) / limit),
                 total: count || 0
@@ -131,7 +137,7 @@ module.exports = async (req, res) => {
                 }
 
                 // Upload to Supabase Storage
-                const { error: uploadError } = await supabase.storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('gallery')
                     .upload(`public/${filename}`, file.content, {
                         contentType: file.contentType,
@@ -139,13 +145,12 @@ module.exports = async (req, res) => {
                     });
 
                 if (uploadError) {
+                    console.error('Upload error:', uploadError);
                     throw uploadError;
                 }
 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('gallery')
-                    .getPublicUrl(`public/${filename}`);
+                // Get public URL - using the correct path construction
+                const publicUrl = `${supabaseUrl}/storage/v1/object/public/gallery/public/${filename}`;
 
                 // Store in database with explicit user_id
                 const { data: image, error: dbError } = await supabase
@@ -154,7 +159,7 @@ module.exports = async (req, res) => {
                         filename,
                         url: publicUrl,
                         tags,
-                        user_id: user.id,  // Make sure this matches the authenticated user's ID
+                        user_id: user.id,
                         created_at: new Date().toISOString()
                     }])
                     .select()
@@ -164,6 +169,12 @@ module.exports = async (req, res) => {
                     console.error('Database error:', dbError);
                     throw new Error(dbError.message);
                 }
+
+                console.log('Successfully uploaded image:', {
+                    filename,
+                    url: publicUrl,
+                    imageId: image.id
+                });
 
                 return res.status(200).json({
                     success: true,

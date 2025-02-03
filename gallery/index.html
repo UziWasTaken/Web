@@ -572,7 +572,12 @@
                         const isOwner = image.user_id === user?.id;
                         
                         item.innerHTML = `
-                            <img src="${image.url}" alt="Gallery item" loading="lazy">
+                            <img 
+                                src="${image.url}" 
+                                alt="Gallery item" 
+                                loading="lazy"
+                                onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect width=%221%22 height=%221%22 fill=%22%23374151%22/></svg>'"
+                            >
                             <div class="tags">
                                 ${(image.tags || []).map(tag => `<span class="tag-pill">${tag}</span>`).join('')}
                                 ${isOwner ? `
