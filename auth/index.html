@@ -242,7 +242,6 @@
             const submitBtn = form.querySelector('button[type="submit"]');
 
             try {
-                // Disable submit button while processing
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Signing up...';
 
@@ -259,19 +258,23 @@
                     throw new Error('Password must be at least 6 characters long');
                 }
 
-                const response = await fetch('/api/auth/signup', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, email, password })
+                // Create Supabase client
+                const supabase = createClient(
+                    'https://wxyrrhgxrtrmpqmrljih.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg'
+                );
+
+                // Sign up with Supabase directly
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: { username },
+                        emailRedirectTo: 'https://r34cat.online/auth/callback'
+                    }
                 });
 
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to sign up');
-                }
+                if (error) throw error;
 
                 // Show success message
                 successEl.textContent = 'Successfully signed up! Please check your email for verification.';
@@ -287,44 +290,59 @@
                 }, 3000);
 
             } catch (error) {
+                console.error('Sign up error:', error);
                 errorEl.textContent = error.message;
                 errorEl.classList.add('active');
                 successEl.classList.remove('active');
             } finally {
-                // Re-enable submit button
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Sign Up';
             }
         }
 
-        // Check for tokens in URL hash
-        function getHashParams() {
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            const result = {};
-            for (const [key, value] of params) {
-                result[key] = value;
+        // Handle URL parameters and hash
+        function handleAuthRedirect() {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const error = hashParams.get('error');
+            const error_description = hashParams.get('error_description');
+            const access_token = hashParams.get('access_token');
+            const refresh_token = hashParams.get('refresh_token');
+            const expires_in = hashParams.get('expires_in');
+
+            if (error) {
+                // Handle expired or invalid link
+                if (error_code === 'otp_expired') {
+                    const errorEl = document.getElementById('signinError');
+                    errorEl.textContent = 'Email verification link has expired. Please sign up again.';
+                    errorEl.classList.add('active');
+                    switchTab('signup');
+                    return;
+                }
+                
+                const errorEl = document.getElementById('signinError');
+                errorEl.textContent = error_description || error;
+                errorEl.classList.add('active');
+                return;
             }
-            return result;
+
+            if (access_token) {
+                // Store tokens
+                localStorage.setItem('supabase.auth.token', access_token);
+                if (refresh_token) {
+                    localStorage.setItem('supabase.auth.refresh_token', refresh_token);
+                }
+                if (expires_in) {
+                    const expiresAt = Date.now() + parseInt(expires_in) * 1000;
+                    localStorage.setItem('supabase.auth.expires_at', expiresAt.toString());
+                }
+
+                // Redirect to gallery
+                window.location.href = '/gallery';
+            }
         }
 
-        // Handle URL parameters and hash
-        const urlParams = new URLSearchParams(window.location.search);
-        const hashParams = getHashParams();
-        
-        // Check for access token in hash
-        if (hashParams.access_token) {
-            localStorage.setItem('supabase.auth.token', hashParams.access_token);
-            window.location.href = '/gallery';
-        }
-        // Check for error in query params
-        else if (urlParams.get('error')) {
-            const error = urlParams.get('error');
-            const errorDescription = urlParams.get('error_description');
-            const errorEl = document.getElementById('signinError');
-            errorEl.textContent = errorDescription || error;
-            errorEl.classList.add('active');
-        }
+        // Call handleAuthRedirect on page load
+        handleAuthRedirect();
 
         async function handleSignIn(event) {
             event.preventDefault();
