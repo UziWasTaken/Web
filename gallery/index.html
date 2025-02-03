@@ -540,6 +540,9 @@
             loadingSpinner.classList.add('active');
 
             try {
+                // Get current user first
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                
                 const response = await fetch(`/api/gallery?page=${page}&limit=20${tags ? `&tags=${tags}` : ''}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`
@@ -563,16 +566,13 @@
                 galleryGrid.innerHTML = '';
 
                 if (data.images && Array.isArray(data.images)) {
-                    data.images.forEach(async image => {
+                    data.images.forEach(image => {
                         const item = document.createElement('div');
                         item.className = 'gallery-item';
-                        
-                        // Get current user
-                        const { data: { user } } = await supabaseClient.auth.getUser();
-                        const isOwner = image.user_id === (user?.id || '');
+                        const isOwner = image.user_id === user?.id;
                         
                         item.innerHTML = `
-                            <img src="${image.url}" alt="Gallery item">
+                            <img src="${image.url}" alt="Gallery item" loading="lazy">
                             <div class="tags">
                                 ${(image.tags || []).map(tag => `<span class="tag-pill">${tag}</span>`).join('')}
                                 ${isOwner ? `
@@ -591,7 +591,7 @@
                     totalPages = data.totalPages || 1;
                     updatePagination();
                 } else {
-                    throw new Error('Invalid response format');
+                    galleryGrid.innerHTML = '<div style="text-align: center; padding: 2rem;">No images found</div>';
                 }
 
             } catch (error) {

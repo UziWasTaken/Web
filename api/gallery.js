@@ -82,6 +82,8 @@ module.exports = async (req, res) => {
             const tags = req.query.tags ? req.query.tags.split(' ') : [];
             const offset = (page - 1) * limit;
 
+            console.log('Fetching images with params:', { page, limit, tags, offset });
+
             let query = supabase
                 .from('images')
                 .select('*', { count: 'exact' })
@@ -95,8 +97,11 @@ module.exports = async (req, res) => {
             const { data: images, error: dbError, count } = await query;
 
             if (dbError) {
+                console.error('Database error:', dbError);
                 throw dbError;
             }
+
+            console.log('Found images:', images?.length || 0, 'Total count:', count);
 
             return res.status(200).json({
                 images: images || [],
