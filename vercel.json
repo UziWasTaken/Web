@@ -2,12 +2,18 @@
     "version": 2,
     "routes": [
         {
-            "src": "/tools",
-            "dest": "/tools.html"
+            "src": "/api/youtube/info",
+            "methods": ["GET"],
+            "dest": "/api/youtube.js"
         },
         {
-            "src": "/assets/(.*)",
-            "dest": "/assets/$1"
+            "src": "/api/youtube/download",
+            "methods": ["GET"],
+            "dest": "/api/youtube.js"
+        },
+        {
+            "src": "/tools",
+            "dest": "/tools.html"
         },
         {
             "src": "/(.*)",

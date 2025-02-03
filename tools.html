@@ -322,10 +322,11 @@
             videoInfo.classList.remove('active');
 
             try {
-                const response = await fetch('/api/youtube/info?url=' + encodeURIComponent(url), {
+                const response = await fetch(`/api/youtube/info?url=${encodeURIComponent(url)}`, {
                     method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
                     }
                 });
 
