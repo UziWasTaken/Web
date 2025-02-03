@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 // Initialize Supabase client
 const supabaseUrl = 'https://wxyrrhgxrtrmpqmrljih.supabase.co';
@@ -7,7 +7,8 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
         autoRefreshToken: true,
-        persistSession: true
+        persistSession: true,
+        detectSessionInUrl: true
     }
 });
 
@@ -18,7 +19,7 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,DELETE');
     res.setHeader(
         'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
     );
 
     // Handle preflight request
@@ -43,12 +44,15 @@ export default async function handler(req, res) {
                 password,
                 options: {
                     data: {
-                        username
-                    }
+                        username,
+                        full_name: username
+                    },
+                    emailRedirectTo: `${req.headers.origin}/auth`
                 }
             });
 
             if (error) {
+                console.error('Signup error:', error);
                 return res.status(400).json({
                     error: error.message
                 });
@@ -56,7 +60,8 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 success: true,
-                user: data.user
+                user: data.user,
+                session: data.session
             });
         }
 
@@ -76,6 +81,7 @@ export default async function handler(req, res) {
             });
 
             if (error) {
+                console.error('Signin error:', error);
                 return res.status(400).json({
                     error: error.message
                 });
@@ -93,6 +99,7 @@ export default async function handler(req, res) {
             const { error } = await supabase.auth.signOut();
             
             if (error) {
+                console.error('Signout error:', error);
                 return res.status(400).json({
                     error: error.message
                 });
@@ -116,6 +123,7 @@ export default async function handler(req, res) {
             const { data: { user }, error } = await supabase.auth.getUser(token);
 
             if (error) {
+                console.error('Get user error:', error);
                 return res.status(401).json({
                     error: error.message
                 });
@@ -134,7 +142,8 @@ export default async function handler(req, res) {
     } catch (error) {
         console.error('Auth error:', error);
         return res.status(500).json({
-            error: 'Internal server error'
+            error: 'Internal server error',
+            details: error.message
         });
     }
 } 
