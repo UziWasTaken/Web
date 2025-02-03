@@ -21,13 +21,15 @@ module.exports = async (req, res) => {
         return;
     }
 
-    // Sign Up
-    if (req.method === 'POST' && req.url.includes('/api/auth/signup')) {
-        try {
+    try {
+        // Sign Up
+        if (req.method === 'POST' && req.url.includes('/api/auth/signup')) {
             const { email, password, username } = req.body;
 
             if (!email || !password || !username) {
-                return res.status(400).json({ error: 'Email, password, and username are required' });
+                return res.status(400).json({
+                    error: 'Email, password, and username are required'
+                });
             }
 
             const { data, error } = await supabase.auth.signUp({
@@ -40,26 +42,26 @@ module.exports = async (req, res) => {
                 }
             });
 
-            if (error) throw error;
+            if (error) {
+                return res.status(400).json({
+                    error: error.message
+                });
+            }
 
             return res.status(200).json({
                 success: true,
                 user: data.user
             });
-
-        } catch (error) {
-            console.error('Signup error:', error);
-            return res.status(500).json({ error: error.message });
         }
-    }
 
-    // Sign In
-    if (req.method === 'POST' && req.url.includes('/api/auth/signin')) {
-        try {
+        // Sign In
+        if (req.method === 'POST' && req.url.includes('/api/auth/signin')) {
             const { email, password } = req.body;
 
             if (!email || !password) {
-                return res.status(400).json({ error: 'Email and password are required' });
+                return res.status(400).json({
+                    error: 'Email and password are required'
+                });
             }
 
             const { data, error } = await supabase.auth.signInWithPassword({
@@ -67,50 +69,66 @@ module.exports = async (req, res) => {
                 password
             });
 
-            if (error) throw error;
+            if (error) {
+                return res.status(400).json({
+                    error: error.message
+                });
+            }
 
             return res.status(200).json({
                 success: true,
                 session: data.session,
                 user: data.user
             });
-
-        } catch (error) {
-            console.error('Signin error:', error);
-            return res.status(500).json({ error: error.message });
         }
-    }
 
-    // Sign Out
-    if (req.method === 'POST' && req.url.includes('/api/auth/signout')) {
-        try {
+        // Sign Out
+        if (req.method === 'POST' && req.url.includes('/api/auth/signout')) {
             const { error } = await supabase.auth.signOut();
-            if (error) throw error;
+            
+            if (error) {
+                return res.status(400).json({
+                    error: error.message
+                });
+            }
 
-            return res.status(200).json({ success: true });
-
-        } catch (error) {
-            console.error('Signout error:', error);
-            return res.status(500).json({ error: error.message });
+            return res.status(200).json({
+                success: true
+            });
         }
-    }
 
-    // Get User
-    if (req.method === 'GET' && req.url.includes('/api/auth/user')) {
-        try {
-            const { data: { user }, error } = await supabase.auth.getUser(
-                req.headers['authorization']?.split('Bearer ')[1]
-            );
+        // Get User
+        if (req.method === 'GET' && req.url.includes('/api/auth/user')) {
+            const token = req.headers['authorization']?.split('Bearer ')[1];
+            
+            if (!token) {
+                return res.status(401).json({
+                    error: 'No authorization token provided'
+                });
+            }
 
-            if (error) throw error;
+            const { data: { user }, error } = await supabase.auth.getUser(token);
 
-            return res.status(200).json({ user });
+            if (error) {
+                return res.status(401).json({
+                    error: error.message
+                });
+            }
 
-        } catch (error) {
-            console.error('Get user error:', error);
-            return res.status(500).json({ error: error.message });
+            return res.status(200).json({
+                user
+            });
         }
-    }
 
-    return res.status(404).json({ error: 'Not found' });
+        // Handle unknown endpoints
+        return res.status(404).json({
+            error: 'Not found'
+        });
+
+    } catch (error) {
+        console.error('Auth error:', error);
+        return res.status(500).json({
+            error: 'Internal server error'
+        });
+    }
 }; 

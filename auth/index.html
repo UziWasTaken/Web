@@ -233,39 +233,112 @@
             });
         }
 
+        async function handleSignUp(event) {
+            event.preventDefault();
+            const form = event.target;
+            const errorEl = document.getElementById('signupError');
+            const successEl = document.getElementById('signupSuccess');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            try {
+                // Disable submit button while processing
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Signing up...';
+
+                const username = form.querySelector('input[type="text"]').value.trim();
+                const email = form.querySelector('input[type="email"]').value.trim();
+                const password = form.querySelector('input[type="password"]').value;
+
+                // Basic validation
+                if (!username || !email || !password) {
+                    throw new Error('All fields are required');
+                }
+
+                if (password.length < 6) {
+                    throw new Error('Password must be at least 6 characters long');
+                }
+
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to sign up');
+                }
+
+                // Show success message
+                successEl.textContent = 'Successfully signed up! Please check your email for verification.';
+                successEl.classList.add('active');
+                errorEl.classList.remove('active');
+
+                // Clear form
+                form.reset();
+
+                // Switch to sign in tab after a delay
+                setTimeout(() => {
+                    switchTab('signin');
+                }, 3000);
+
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.classList.add('active');
+                successEl.classList.remove('active');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign Up';
+            }
+        }
+
         async function handleSignIn(event) {
             event.preventDefault();
             const form = event.target;
             const errorEl = document.getElementById('signinError');
             const successEl = document.getElementById('signinSuccess');
+            const submitBtn = form.querySelector('button[type="submit"]');
 
             try {
+                // Disable submit button while processing
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Signing in...';
+
+                const email = form.querySelector('input[type="email"]').value.trim();
+                const password = form.querySelector('input[type="password"]').value;
+
+                // Basic validation
+                if (!email || !password) {
+                    throw new Error('Email and password are required');
+                }
+
                 const response = await fetch('/api/auth/signin', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        email: form.querySelector('input[type="email"]').value,
-                        password: form.querySelector('input[type="password"]').value
-                    })
+                    body: JSON.stringify({ email, password })
                 });
 
-                let data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    throw new Error('Invalid server response');
-                }
+                const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data?.error || 'Failed to sign in');
+                    throw new Error(data.error || 'Failed to sign in');
+                }
+
+                if (!data.session || !data.user) {
+                    throw new Error('Invalid response from server');
                 }
 
                 // Store session
                 localStorage.setItem('session', JSON.stringify(data.session));
                 localStorage.setItem('user', JSON.stringify(data.user));
 
+                // Show success message
                 successEl.textContent = 'Successfully signed in!';
                 successEl.classList.add('active');
                 errorEl.classList.remove('active');
@@ -279,51 +352,18 @@
                 errorEl.textContent = error.message;
                 errorEl.classList.add('active');
                 successEl.classList.remove('active');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
             }
         }
 
-        async function handleSignUp(event) {
-            event.preventDefault();
-            const form = event.target;
-            const errorEl = document.getElementById('signupError');
-            const successEl = document.getElementById('signupSuccess');
-
-            try {
-                const response = await fetch('/api/auth/signup', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: form.querySelector('input[type="text"]').value,
-                        email: form.querySelector('input[type="email"]').value,
-                        password: form.querySelector('input[type="password"]').value
-                    })
-                });
-
-                let data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    throw new Error('Invalid server response');
-                }
-
-                if (!response.ok) {
-                    throw new Error(data?.error || 'Failed to sign up');
-                }
-
-                successEl.textContent = 'Successfully signed up! Please check your email for verification.';
-                successEl.classList.add('active');
-                errorEl.classList.remove('active');
-
-                // Clear form
-                form.reset();
-
-            } catch (error) {
-                errorEl.textContent = error.message;
-                errorEl.classList.add('active');
-                successEl.classList.remove('active');
-            }
+        // Check if we're already logged in
+        const session = localStorage.getItem('session');
+        const user = localStorage.getItem('user');
+        if (session && user) {
+            window.location.href = '/gallery';
         }
     </script>
 </body>
