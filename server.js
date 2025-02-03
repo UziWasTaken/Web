@@ -6,8 +6,21 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '.')));
+// Middleware to parse JSON
+app.use(express.json());
+
+// Serve static files from the root directory
+app.use(express.static(path.join(__dirname)));
+
+// Serve the main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Serve the tools page
+app.get('/tools', (req, res) => {
+    res.sendFile(path.join(__dirname, 'tools.html'));
+});
 
 // Initialize YouTube API client
 const youtube = google.youtube({
@@ -72,6 +85,17 @@ app.get('/api/youtube/download', (req, res) => {
     const { url, format } = req.query;
     // TODO: Implement actual download functionality
     res.status(501).json({ message: 'Download functionality coming soon' });
+});
+
+// Error handler for invalid routes
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found' });
+});
+
+// Error handler for server errors
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {

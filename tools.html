@@ -322,13 +322,19 @@
             videoInfo.classList.remove('active');
 
             try {
-                const response = await fetch('/api/youtube/info?url=' + encodeURIComponent(url));
-                const data = await response.json();
+                const response = await fetch('/api/youtube/info?url=' + encodeURIComponent(url), {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Error fetching video information');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error fetching video information');
                 }
 
+                const data = await response.json();
                 document.getElementById('thumbnail').src = data.thumbnail;
                 document.getElementById('videoTitle').textContent = data.title;
                 document.getElementById('channelName').textContent = data.channel;
@@ -338,6 +344,7 @@
                 loading.classList.remove('active');
                 videoInfo.classList.add('active');
             } catch (error) {
+                console.error('Error:', error);
                 alert(error.message || 'Error fetching video information');
                 loading.classList.remove('active');
             }
