@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gallery - r34cat.online</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -348,10 +349,16 @@
     
     <nav class="navbar">
         <a href="/" class="logo">r34cat.online</a>
-        <button class="upload-btn" onclick="showUploadModal()">
-            <i class="fas fa-upload"></i>
-            Upload
-        </button>
+        <div class="nav-buttons">
+            <button class="upload-btn" onclick="showUploadModal()">
+                <i class="fas fa-upload"></i>
+                Upload
+            </button>
+            <button class="upload-btn" onclick="handleSignOut()">
+                <i class="fas fa-sign-out-alt"></i>
+                Sign Out
+            </button>
+        </div>
     </nav>
 
     <div class="container">
@@ -396,18 +403,86 @@
     </div>
 
     <script>
-        // Check authentication
-        const session = JSON.parse(localStorage.getItem('session'));
-        const user = JSON.parse(localStorage.getItem('user'));
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(
+            'https://wxyrrhgxrtrmpqmrljih.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg'
+        );
 
-        if (!session || !user) {
-            window.location.href = '/auth';
+        // Check authentication state
+        async function checkAuth() {
+            const token = localStorage.getItem('supabase.auth.token');
+            const expiresAt = localStorage.getItem('supabase.auth.expires_at');
+
+            if (!token || !expiresAt) {
+                window.location.replace('/auth');
+                return false;
+            }
+
+            try {
+                // Check if token is expired
+                if (Date.now() >= parseInt(expiresAt)) {
+                    // Try to refresh the session
+                    const refreshToken = localStorage.getItem('supabase.auth.refresh_token');
+                    if (refreshToken) {
+                        const { data: { session }, error } = await supabaseClient.auth.refreshSession({
+                            refresh_token: refreshToken
+                        });
+
+                        if (error || !session) {
+                            throw error || new Error('Failed to refresh session');
+                        }
+
+                        // Update session data
+                        localStorage.setItem('supabase.auth.token', session.access_token);
+                        localStorage.setItem('supabase.auth.refresh_token', session.refresh_token);
+                        const newExpiresAt = Date.now() + session.expires_in * 1000;
+                        localStorage.setItem('supabase.auth.expires_at', newExpiresAt.toString());
+                        return true;
+                    }
+
+                    throw new Error('Session expired');
+                }
+
+                // Verify token with Supabase
+                const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+                
+                if (error) {
+                    throw error;
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                // Clear invalid session
+                localStorage.removeItem('supabase.auth.token');
+                localStorage.removeItem('supabase.auth.refresh_token');
+                localStorage.removeItem('supabase.auth.expires_at');
+                window.location.replace('/auth');
+                return false;
+            }
         }
 
-        // Add authentication header to all requests
-        const authHeader = {
-            'Authorization': `Bearer ${session?.access_token}`
-        };
+        // Handle sign out
+        async function handleSignOut() {
+            try {
+                await supabaseClient.auth.signOut();
+            } catch (error) {
+                console.error('Sign out error:', error);
+            } finally {
+                localStorage.removeItem('supabase.auth.token');
+                localStorage.removeItem('supabase.auth.refresh_token');
+                localStorage.removeItem('supabase.auth.expires_at');
+                window.location.replace('/auth');
+            }
+        }
+
+        // Check auth on page load
+        checkAuth();
+
+        // Periodically check auth state
+        setInterval(checkAuth, 60000); // Check every minute
 
         let currentPage = 1;
         let totalPages = 1;
@@ -426,7 +501,9 @@
 
             try {
                 const response = await fetch(`/api/gallery/images?page=${page}&limit=20${tags ? `&tags=${tags}` : ''}`, {
-                    headers: authHeader
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`
+                    }
                 });
 
                 let data;
@@ -439,8 +516,9 @@
                 if (!response.ok) {
                     if (response.status === 401) {
                         // Session expired
-                        localStorage.removeItem('session');
-                        localStorage.removeItem('user');
+                        localStorage.removeItem('supabase.auth.token');
+                        localStorage.removeItem('supabase.auth.refresh_token');
+                        localStorage.removeItem('supabase.auth.expires_at');
                         window.location.href = '/auth';
                         return;
                     }
@@ -575,7 +653,7 @@
                 const response = await fetch('/api/gallery/upload', {
                     method: 'POST',
                     headers: {
-                        ...authHeader
+                        'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`
                     },
                     body: formData
                 });
@@ -590,8 +668,9 @@
                 if (!response.ok) {
                     if (response.status === 401) {
                         // Session expired
-                        localStorage.removeItem('session');
-                        localStorage.removeItem('user');
+                        localStorage.removeItem('supabase.auth.token');
+                        localStorage.removeItem('supabase.auth.refresh_token');
+                        localStorage.removeItem('supabase.auth.expires_at');
                         window.location.href = '/auth';
                         return;
                     }
@@ -668,27 +747,6 @@
             button.parentElement.remove();
             tags.delete(tagText);
         }
-
-        // Add sign out button to navbar
-        const navbar = document.querySelector('.navbar');
-        const signOutBtn = document.createElement('button');
-        signOutBtn.className = 'upload-btn';
-        signOutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Sign Out';
-        signOutBtn.onclick = async () => {
-            try {
-                await fetch('/api/auth/signout', {
-                    method: 'POST',
-                    headers: authHeader
-                });
-            } catch (error) {
-                console.error('Sign out error:', error);
-            } finally {
-                localStorage.removeItem('session');
-                localStorage.removeItem('user');
-                window.location.href = '/auth';
-            }
-        };
-        navbar.appendChild(signOutBtn);
     </script>
 </body>
 </html> 
