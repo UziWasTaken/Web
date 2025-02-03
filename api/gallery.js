@@ -3,21 +3,37 @@ const multer = require('multer');
 const util = require('util');
 
 // Initialize Supabase client
-const supabaseUrl = 'https://wxyrrhgxrtrmpqmrljih.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase environment variables');
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Configure multer for memory storage
-const upload = multer({
+const multerMiddleware = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB limit
     }
-}).single('image');
+});
 
-// Promisify multer middleware
-const uploadMiddleware = util.promisify(upload);
+// Custom middleware to handle file uploads
+const handleUpload = (req, res) => {
+    return new Promise((resolve, reject) => {
+        multerMiddleware.single('image')(req, res, (err) => {
+            if (err) {
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    reject(new Error('File size too large. Maximum size is 5MB'));
+                }
+                reject(err);
+            }
+            resolve();
+        });
+    });
+};
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -78,12 +94,7 @@ module.exports = async (req, res) => {
         if (req.method === 'POST' && req.url.includes('/api/gallery/upload')) {
             try {
                 // Parse multipart form data
-                await new Promise((resolve, reject) => {
-                    upload(req, res, (err) => {
-                        if (err) reject(err);
-                        resolve();
-                    });
-                });
+                await handleUpload(req, res);
 
                 if (!req.file) {
                     return res.status(400).json({ error: 'No image file provided' });
@@ -113,13 +124,9 @@ module.exports = async (req, res) => {
                 }
 
                 // Get public URL
-                const { data: { publicUrl }, error: urlError } = supabase.storage
+                const { data: { publicUrl } } = supabase.storage
                     .from('gallery')
                     .getPublicUrl(`public/${filename}`);
-
-                if (urlError) {
-                    throw urlError;
-                }
 
                 // Store in database
                 const { data: dbData, error: dbError } = await supabase
