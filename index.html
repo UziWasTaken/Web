@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byte - Ultimate BladeBall Script</title>
+    <title>r34cat.online - Hub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -17,6 +17,10 @@
             background-color: #0f1116;
             color: #ffffff;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             overflow-x: hidden;
         }
 
@@ -33,31 +37,35 @@
 
         .container {
             max-width: 1200px;
-            margin: 0 auto;
             padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            text-align: center;
         }
 
-        .logo {
-            font-size: 4rem;
+        .title {
+            font-size: 3rem;
             font-weight: bold;
+            margin-bottom: 2rem;
             background: linear-gradient(135deg, #6366f1, #a855f7);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            margin-bottom: 1rem;
-            animation: float 6s ease-in-out infinite;
+            animation: slideDown 0.6s ease-out;
         }
 
         .subtitle {
             color: #94a3b8;
-            font-size: 1.2rem;
             margin-bottom: 3rem;
-            text-align: center;
+            font-size: 1.2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .card {
@@ -66,66 +74,42 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
             padding: 2rem;
-            width: 100%;
-            max-width: 500px;
-            margin-bottom: 2rem;
-            animation: slideUp 0.6s ease-out;
-        }
-
-        .discord-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            background: #5865f2;
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-decoration: none;
+            text-align: center;
             transition: all 0.3s ease;
-            width: 100%;
-            border: none;
             cursor: pointer;
-            animation: pulse 2s infinite;
-        }
-
-        .discord-btn:hover {
-            background: #4752c4;
-            transform: translateY(-2px);
-        }
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .feature-card {
-            background: rgba(30, 41, 59, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 0.75rem;
             animation: slideUp 0.6s ease-out;
         }
 
-        .feature-card h3 {
-            color: #818cf8;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
+        .card:hover {
+            transform: translateY(-5px);
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(99, 102, 241, 0.5);
         }
 
-        .feature-card p {
+        .card i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .card p {
             color: #94a3b8;
             font-size: 0.9rem;
+            margin-bottom: 1rem;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
         @keyframes slideUp {
@@ -133,244 +117,65 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        .music-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(30, 41, 59, 0.7);
-            padding: 10px;
-            border-radius: 50px;
-            backdrop-filter: blur(10px);
-        }
-
-        .music-btn {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 8px;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        .music-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .volume-slider {
-            width: 80px;
-            -webkit-appearance: none;
-            background: rgba(255, 255, 255, 0.1);
-            height: 4px;
-            border-radius: 2px;
-            outline: none;
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
             }
-            .logo {
-                font-size: 3rem;
+            .title {
+                font-size: 2rem;
             }
-            .features {
+            .grid {
                 grid-template-columns: 1fr;
+                max-width: 400px;
             }
-        }
-
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-        }
-
-        .nav-logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-decoration: none;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-        }
-
-        .nav-link {
-            color: #94a3b8;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: #ffffff;
-        }
-
-        .nav-link.active {
-            color: #6366f1;
-        }
-
-        .container {
-            padding-top: 5rem;
         }
     </style>
 </head>
 <body>
     <div class="gradient-bg"></div>
-    <div class="particles" id="particles"></div>
-    
-    <nav class="navbar">
-        <a href="/" class="nav-logo">BYTE</a>
-        <div class="nav-links">
-            <a href="/" class="nav-link active">Home</a>
-            <a href="/tools" class="nav-link">Tools</a>
-        </div>
-    </nav>
 
-    <!-- Music Controls -->
-    <div class="music-controls">
-        <button class="music-btn" id="playPauseBtn">
-            <i class="fas fa-pause" id="playPauseIcon"></i>
-        </button>
-        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
-    </div>
-
-    <!-- Audio Element -->
-    <audio id="bgMusic" loop>
-        <source src="/assets/youtube_3l7As5L5MTI_audio.mp3" type="audio/mp3">
-    </audio>
-    
     <div class="container">
-        <h1 class="logo">BYTE</h1>
-        <p class="subtitle">Ultimate BladeBall Script</p>
+        <h1 class="title">r34cat.online</h1>
+        <p class="subtitle">Choose your destination</p>
 
-        <div class="card">
-            <a href="https://discord.gg/CUcRgdEVZv" class="discord-btn" target="_blank">
-                <i class="fab fa-discord"></i>
-                Join Discord to Purchase
-            </a>
-        </div>
-
-        <div class="features">
-            <div class="feature-card">
-                <h3><i class="fas fa-shield-alt"></i> Auto Parry</h3>
-                <p>Advanced prediction system for perfect timing</p>
+        <div class="grid">
+            <div class="card" onclick="window.location.href='/bytescript'">
+                <i class="fas fa-code"></i>
+                <h3>ByteScript</h3>
+                <p>Access ByteScript tools and utilities</p>
             </div>
-            <div class="feature-card">
-                <h3><i class="fas fa-bolt"></i> Optimizations</h3>
-                <p>Makes the game run super smoothly</p>
+
+            <div class="card" onclick="window.location.href='/tools'">
+                <i class="fas fa-tools"></i>
+                <h3>Tools</h3>
+                <p>Explore our collection of useful tools</p>
+            </div>
+
+            <div class="card" onclick="window.location.href='/projects'">
+                <i class="fas fa-project-diagram"></i>
+                <h3>Projects</h3>
+                <p>View our featured projects</p>
+            </div>
+
+            <div class="card" onclick="window.location.href='/about'">
+                <i class="fas fa-info-circle"></i>
+                <h3>About</h3>
+                <p>Learn more about us</p>
             </div>
         </div>
     </div>
 
     <script>
-        // Particle effect
-        const particlesContainer = document.getElementById('particles');
-        
-        function createParticle() {
-            const particle = document.createElement('div');
-            particle.style.position = 'absolute';
-            particle.style.width = '2px';
-            particle.style.height = '2px';
-            particle.style.background = 'rgba(255, 255, 255, 0.5)';
-            particle.style.borderRadius = '50%';
-            particle.style.pointerEvents = 'none';
-            
-            const startX = Math.random() * window.innerWidth;
-            const startY = Math.random() * window.innerHeight;
-            
-            particle.style.left = `${startX}px`;
-            particle.style.top = `${startY}px`;
-            
-            particle.animate([
-                { transform: 'translateY(0) scale(1)', opacity: 1 },
-                { transform: 'translateY(-100px) scale(0)', opacity: 0 }
-            ], {
-                duration: Math.random() * 3000 + 2000,
-                easing: 'ease-out'
+        // Add hover effect sound if needed
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                // You can add hover sound effect here if desired
             });
-            
-            particlesContainer.appendChild(particle);
-            
-            setTimeout(() => {
-                particle.remove();
-            }, 5000);
-        }
-
-        setInterval(createParticle, 100);
-
-        // Music Controls
-        const audio = document.getElementById('bgMusic');
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const playPauseIcon = document.getElementById('playPauseIcon');
-        const volumeSlider = document.getElementById('volumeSlider');
-
-        // Set initial volume and play
-        audio.volume = volumeSlider.value / 100;
-        audio.play().catch(() => {
-            // If autoplay fails, we'll wait for user interaction
-            document.addEventListener('click', () => {
-                audio.play();
-            }, { once: true });
-        });
-
-        // Play/Pause functionality
-        playPauseBtn.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.play();
-                playPauseIcon.classList.remove('fa-play');
-                playPauseIcon.classList.add('fa-pause');
-            } else {
-                audio.pause();
-                playPauseIcon.classList.remove('fa-pause');
-                playPauseIcon.classList.add('fa-play');
-            }
-        });
-
-        // Volume control
-        volumeSlider.addEventListener('input', (e) => {
-            audio.volume = e.target.value / 100;
         });
     </script>
 </body>
