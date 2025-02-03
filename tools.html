@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Audio Downloader - Byte Tools</title>
+    <title>Byte - YouTube Audio Downloader</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -78,9 +78,6 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 6rem 2rem 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
 
         .downloader-card {
@@ -89,92 +86,131 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
             padding: 2rem;
-            width: 100%;
+            margin-bottom: 2rem;
             animation: slideUp 0.6s ease-out;
         }
 
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
         .url-input {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1rem;
             border-radius: 0.5rem;
             color: white;
             font-size: 1rem;
-            margin-bottom: 1rem;
             transition: all 0.3s ease;
         }
 
         .url-input:focus {
             outline: none;
             border-color: #6366f1;
-            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
 
-        .url-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .controls {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .control-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0.5rem;
+        .fetch-btn {
+            background: #6366f1;
             color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .control-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .control-btn.active {
-            background: #6366f1;
-            border-color: #6366f1;
-        }
-
-        .download-btn {
-            width: 100%;
-            padding: 1rem;
-            background: #6366f1;
             border: none;
+            padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
-            color: white;
-            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 0.5rem;
         }
 
-        .download-btn:hover {
+        .fetch-btn:hover {
             background: #4f46e5;
             transform: translateY(-2px);
         }
 
-        .download-btn:disabled {
-            background: #4b5563;
-            cursor: not-allowed;
-            transform: none;
+        .video-info {
+            display: none;
+            margin-top: 2rem;
+            animation: slideUp 0.6s ease-out;
         }
 
-        .status-text {
-            margin-top: 1rem;
+        .video-info.active {
+            display: block;
+        }
+
+        .video-meta {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .thumbnail {
+            width: 200px;
+            border-radius: 0.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .meta-text h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .meta-text p {
             color: #94a3b8;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .format-select {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            color: white;
+            width: 100%;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .format-select option {
+            background: #1f2937;
+        }
+
+        .download-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .download-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            display: none;
             text-align: center;
+            margin: 2rem 0;
+            color: #94a3b8;
+        }
+
+        .loading.active {
+            display: block;
         }
 
         @keyframes slideUp {
@@ -182,12 +218,24 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 5rem 1rem 1rem;
             }
-            .controls {
+            .input-group {
                 flex-direction: column;
+            }
+            .video-meta {
+                flex-direction: column;
+            }
+            .thumbnail {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
             }
         }
     </style>
@@ -205,99 +253,106 @@
 
     <div class="container">
         <div class="downloader-card">
-            <input type="text" class="url-input" placeholder="Paste YouTube URL here..." id="urlInput">
-            <div class="controls">
-                <button class="control-btn active">
-                    <i class="fas fa-music"></i>
-                    Audio Only
-                </button>
-                <button class="control-btn">
-                    <i class="fas fa-volume-up"></i>
-                    High Quality
-                </button>
-                <button class="control-btn">
-                    <i class="fas fa-bolt"></i>
-                    Fast Download
+            <div class="input-group">
+                <input type="text" class="url-input" placeholder="Enter YouTube URL" id="youtubeUrl">
+                <button class="fetch-btn" onclick="fetchVideoInfo()">
+                    <i class="fas fa-search"></i>
+                    Fetch Info
                 </button>
             </div>
-            <button class="download-btn" id="downloadBtn">
-                <i class="fas fa-download"></i>
-                Download Audio
-            </button>
-            <p class="status-text" id="statusText">Ready to download</p>
+
+            <div class="loading" id="loading">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                Fetching video information...
+            </div>
+
+            <div class="video-info" id="videoInfo">
+                <div class="video-meta">
+                    <img src="" alt="Video Thumbnail" class="thumbnail" id="thumbnail">
+                    <div class="meta-text">
+                        <h2 id="videoTitle"></h2>
+                        <p id="channelName"></p>
+                        <p id="duration"></p>
+                        <p id="viewCount"></p>
+                    </div>
+                </div>
+
+                <select class="format-select" id="formatSelect">
+                    <option value="">Select audio format</option>
+                    <option value="mp3">MP3 - High Quality (128kbps)</option>
+                    <option value="m4a">M4A - Best Quality (256kbps)</option>
+                    <option value="wav">WAV - Lossless</option>
+                </select>
+
+                <button class="download-btn" onclick="downloadAudio()">
+                    <i class="fas fa-download"></i>
+                    Download Audio
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        const urlInput = document.getElementById('urlInput');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const statusText = document.getElementById('statusText');
-        const controlBtns = document.querySelectorAll('.control-btn');
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
 
-        urlInput.addEventListener('input', () => {
-            const url = urlInput.value.trim();
-            downloadBtn.disabled = !url;
-        });
+        function formatNumber(num) {
+            return new Intl.NumberFormat().format(num);
+        }
 
-        async function downloadAudio(url, quality) {
+        async function fetchVideoInfo() {
+            const url = document.getElementById('youtubeUrl').value;
+            const loading = document.getElementById('loading');
+            const videoInfo = document.getElementById('videoInfo');
+            
+            if (!url) return;
+
+            loading.classList.add('active');
+            videoInfo.classList.remove('active');
+
             try {
-                statusText.textContent = 'Starting download...';
-                
-                // Create a hidden iframe for download
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
+                // This would be your backend API endpoint
+                const response = await fetch('/api/youtube/info?url=' + encodeURIComponent(url));
+                const data = await response.json();
 
-                // Build the API URL with parameters
-                const apiUrl = `/api/download?url=${encodeURIComponent(url)}&quality=${quality}`;
-                
-                // Navigate iframe to download URL
-                iframe.src = apiUrl;
+                document.getElementById('thumbnail').src = data.thumbnail;
+                document.getElementById('videoTitle').textContent = data.title;
+                document.getElementById('channelName').textContent = data.channel;
+                document.getElementById('duration').textContent = formatDuration(data.duration);
+                document.getElementById('viewCount').textContent = formatNumber(data.view_count) + ' views';
 
-                // Remove iframe after download starts
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                    statusText.textContent = 'Download started!';
-                    downloadBtn.disabled = false;
-                    urlInput.value = '';
-                }, 2000);
-
+                loading.classList.remove('active');
+                videoInfo.classList.add('active');
             } catch (error) {
-                console.error('Download error:', error);
-                statusText.textContent = 'Download failed. Please try again.';
-                downloadBtn.disabled = false;
+                alert('Error fetching video information');
+                loading.classList.remove('active');
             }
         }
 
-        downloadBtn.addEventListener('click', async () => {
-            const url = urlInput.value.trim();
-            if (!url) return;
+        async function downloadAudio() {
+            const url = document.getElementById('youtubeUrl').value;
+            const format = document.getElementById('formatSelect').value;
 
-            statusText.textContent = 'Processing...';
-            downloadBtn.disabled = true;
+            if (!url || !format) {
+                alert('Please enter a URL and select a format');
+                return;
+            }
 
-            // Get selected quality
-            const isHighQuality = document.querySelector('.control-btn:nth-child(2)').classList.contains('active');
-            const quality = isHighQuality ? 'high' : 'low';
-
-            await downloadAudio(url, quality);
-        });
-
-        // Toggle control buttons
-        controlBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                // If clicking High Quality button
-                if (btn === controlBtns[1]) {
-                    controlBtns[2].classList.remove('active'); // Deactivate Fast Download
-                    btn.classList.toggle('active');
-                }
-                // If clicking Fast Download button
-                else if (btn === controlBtns[2]) {
-                    controlBtns[1].classList.remove('active'); // Deactivate High Quality
-                    btn.classList.toggle('active');
-                }
-            });
-        });
+            try {
+                // This would be your backend API endpoint
+                window.location.href = `/api/youtube/download?url=${encodeURIComponent(url)}&format=${format}`;
+            } catch (error) {
+                alert('Error downloading audio');
+            }
+        }
     </script>
 </body>
 </html> 
