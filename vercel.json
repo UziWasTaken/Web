@@ -13,22 +13,13 @@
     "routes": [
         {
             "src": "/api/gallery",
-            "methods": ["GET", "POST", "OPTIONS"],
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization"
-            },
-            "dest": "/api/gallery.js"
+            "methods": ["GET", "POST", "OPTIONS", "DELETE"],
+            "dest": "api/gallery.js"
         },
         {
-            "src": "/api/auth/(.*)",
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization"
-            },
-            "dest": "/api/auth.js"
+            "src": "/api/auth",
+            "methods": ["GET", "POST", "OPTIONS"],
+            "dest": "api/auth.js"
         },
         {
             "src": "/account",
@@ -37,18 +28,6 @@
         {
             "src": "/gallery",
             "dest": "/gallery/index.html"
-        },
-        {
-            "src": "/bytescript",
-            "dest": "/bytescript/index.html"
-        },
-        {
-            "src": "/projects",
-            "dest": "/projects/index.html"
-        },
-        {
-            "src": "/about",
-            "dest": "/about/index.html"
         },
         {
             "src": "/auth",

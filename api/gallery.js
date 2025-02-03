@@ -1,23 +1,19 @@
 const { createClient } = require('@supabase/supabase-js');
 const multer = require('multer');
-const util = require('util');
 
 // Initialize Supabase client
 const supabaseUrl = 'https://wxyrrhgxrtrmpqmrljih.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg';
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Configure multer for memory storage
+const storage = multer.memoryStorage();
 const upload = multer({
-    storage: multer.memoryStorage(),
+    storage,
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB limit
     }
 });
-
-// Promisify multer middleware
-const uploadMiddleware = util.promisify(upload.single('image'));
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -39,11 +35,11 @@ module.exports = async (req, res) => {
     try {
         // Verify token with Supabase
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-        if (authError) {
-            throw authError;
+        if (authError || !user) {
+            throw new Error('Invalid or expired token');
         }
 
-        // Handle image listing
+        // Handle GET request (list images)
         if (req.method === 'GET') {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 20;
@@ -52,23 +48,15 @@ module.exports = async (req, res) => {
 
             let query = supabase
                 .from('images')
-                .select('*', { count: 'exact' });
+                .select('*', { count: 'exact' })
+                .order('created_at', { ascending: false })
+                .range(offset, offset + limit - 1);
 
             if (tags.length > 0) {
                 query = query.contains('tags', tags);
             }
 
-            // Get total count first
-            const { count, error: countError } = await query;
-            
-            if (countError) {
-                throw countError;
-            }
-
-            // Then get paginated results
-            const { data: images, error: dbError } = await query
-                .order('created_at', { ascending: false })
-                .range(offset, offset + limit - 1);
+            const { data: images, error: dbError, count } = await query;
 
             if (dbError) {
                 throw dbError;
@@ -82,120 +70,78 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Handle image upload
+        // Handle POST request (upload image)
         if (req.method === 'POST') {
-            try {
-                // Parse multipart form data
-                await uploadMiddleware(req, res);
-                
-                if (!req.file) {
-                    return res.status(400).json({ error: 'No image file provided' });
-                }
+            return new Promise((resolve, reject) => {
+                upload.single('image')(req, res, async (err) => {
+                    if (err) {
+                        console.error('Upload error:', err);
+                        return resolve(res.status(400).json({ 
+                            error: err.message || 'Failed to process upload'
+                        }));
+                    }
 
-                const tags = JSON.parse(req.body.tags || '[]');
+                    try {
+                        if (!req.file) {
+                            throw new Error('No image file provided');
+                        }
 
-                // Generate unique filename
-                const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-                
-                // Upload to Supabase Storage
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('gallery')
-                    .upload(`public/${filename}`, req.file.buffer, {
-                        contentType: req.file.mimetype,
-                        upsert: false
-                    });
+                        const tags = JSON.parse(req.body.tags || '[]');
+                        const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-                if (uploadError) {
-                    throw uploadError;
-                }
+                        // Upload to Supabase Storage
+                        const { error: uploadError } = await supabase.storage
+                            .from('gallery')
+                            .upload(`public/${filename}`, req.file.buffer, {
+                                contentType: req.file.mimetype,
+                                upsert: false
+                            });
 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('gallery')
-                    .getPublicUrl(`public/${filename}`);
+                        if (uploadError) {
+                            throw uploadError;
+                        }
 
-                // Store in database
-                const { data: dbData, error: dbError } = await supabase
-                    .from('images')
-                    .insert([{
-                        filename,
-                        url: publicUrl,
-                        tags: tags,
-                        user_id: user.id,
-                        created_at: new Date().toISOString()
-                    }])
-                    .select()
-                    .single();
+                        // Get public URL
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('gallery')
+                            .getPublicUrl(`public/${filename}`);
 
-                if (dbError) {
-                    throw dbError;
-                }
+                        // Store in database
+                        const { data: image, error: dbError } = await supabase
+                            .from('images')
+                            .insert([{
+                                filename,
+                                url: publicUrl,
+                                tags,
+                                user_id: user.id,
+                                created_at: new Date().toISOString()
+                            }])
+                            .select()
+                            .single();
 
-                return res.status(200).json({
-                    success: true,
-                    image: dbData
+                        if (dbError) {
+                            throw dbError;
+                        }
+
+                        resolve(res.status(200).json({
+                            success: true,
+                            image
+                        }));
+                    } catch (error) {
+                        console.error('Upload processing error:', error);
+                        resolve(res.status(500).json({ 
+                            error: error.message || 'Failed to process upload'
+                        }));
+                    }
                 });
-            } catch (error) {
-                console.error('Upload error:', error);
-                return res.status(500).json({ 
-                    error: 'Failed to upload image',
-                    details: error.message
-                });
-            }
+            });
         }
 
-        // Handle image deletion
-        if (req.method === 'DELETE' && req.url.includes('/api/gallery/delete')) {
-            try {
-                const { id } = req.query;
-
-                if (!id) {
-                    return res.status(400).json({ error: 'No image ID provided' });
-                }
-
-                // Get image data first
-                const { data: imageData, error: fetchError } = await supabase
-                    .from('images')
-                    .select('filename')
-                    .eq('id', id)
-                    .single();
-
-                if (fetchError) {
-                    throw fetchError;
-                }
-
-                // Delete from storage
-                const { error: storageError } = await supabase.storage
-                    .from('gallery')
-                    .remove([`public/${imageData.filename}`]);
-
-                if (storageError) {
-                    throw storageError;
-                }
-
-                // Delete from database
-                const { error: dbError } = await supabase
-                    .from('images')
-                    .delete()
-                    .eq('id', id);
-
-                if (dbError) {
-                    throw dbError;
-                }
-
-                return res.status(200).json({ success: true });
-
-            } catch (error) {
-                console.error('Delete error:', error);
-                return res.status(500).json({ error: 'Failed to delete image' });
-            }
-        }
-
-        // Handle unknown routes
-        return res.status(404).json({ error: 'Not found' });
+        // Handle unknown methods
+        return res.status(405).json({ error: 'Method not allowed' });
 
     } catch (error) {
-        console.error('Gallery error:', error);
+        console.error('Gallery API error:', error);
         return res.status(error.status || 500).json({
             error: error.message || 'Internal server error'
         });
