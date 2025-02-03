@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byte Tools - BladeBall Scripts</title>
+    <title>YouTube Audio Downloader - Byte Tools</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -75,63 +75,106 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 6rem 2rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .tools-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .tool-card {
+        .downloader-card {
             background: rgba(30, 41, 59, 0.5);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
             padding: 2rem;
-            transition: transform 0.3s ease;
+            width: 100%;
             animation: slideUp 0.6s ease-out;
         }
 
-        .tool-card:hover {
-            transform: translateY(-5px);
+        .url-input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
         }
 
-        .tool-card h2 {
-            color: #6366f1;
+        .url-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .url-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
             margin-bottom: 1rem;
-            font-size: 1.5rem;
+        }
+
+        .control-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .tool-card p {
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .control-btn.active {
+            background: #6366f1;
+            border-color: #6366f1;
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #6366f1;
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .download-btn:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+        }
+
+        .download-btn:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-text {
+            margin-top: 1rem;
             color: #94a3b8;
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-        }
-
-        .tool-card .status {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .status.working {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-        }
-
-        .status.updating {
-            background: rgba(245, 158, 11, 0.2);
-            color: #f59e0b;
+            text-align: center;
         }
 
         @keyframes slideUp {
@@ -143,11 +186,8 @@
             .container {
                 padding: 5rem 1rem 1rem;
             }
-            .tools-grid {
-                grid-template-columns: 1fr;
-            }
-            .nav-links {
-                gap: 1rem;
+            .controls {
+                flex-direction: column;
             }
         }
     </style>
@@ -164,31 +204,61 @@
     </nav>
 
     <div class="container">
-        <div class="tools-grid">
-            <div class="tool-card">
-                <h2><i class="fas fa-shield-alt"></i> Auto Parry</h2>
-                <p>Advanced prediction system that automatically parries incoming attacks with perfect timing. Customizable settings for different play styles.</p>
-                <span class="status working">Working</span>
+        <div class="downloader-card">
+            <input type="text" class="url-input" placeholder="Paste YouTube URL here..." id="urlInput">
+            <div class="controls">
+                <button class="control-btn active">
+                    <i class="fas fa-music"></i>
+                    Audio Only
+                </button>
+                <button class="control-btn">
+                    <i class="fas fa-volume-up"></i>
+                    High Quality
+                </button>
+                <button class="control-btn">
+                    <i class="fas fa-bolt"></i>
+                    Fast Download
+                </button>
             </div>
-
-            <div class="tool-card">
-                <h2><i class="fas fa-tachometer-alt"></i> Optimizations</h2>
-                <p>Performance enhancements that make the game run super smoothly. Reduces lag and improves overall gameplay experience.</p>
-                <span class="status working">Working</span>
-            </div>
-
-            <div class="tool-card">
-                <h2><i class="fas fa-bolt"></i> Speed Boost</h2>
-                <p>Controlled movement speed modifications for better mobility and positioning during matches.</p>
-                <span class="status working">Working</span>
-            </div>
-
-            <div class="tool-card">
-                <h2><i class="fas fa-magic"></i> Custom Abilities</h2>
-                <p>Enhanced ability controls and special moves to give you the competitive edge.</p>
-                <span class="status updating">Updating</span>
-            </div>
+            <button class="download-btn" id="downloadBtn">
+                <i class="fas fa-download"></i>
+                Download Audio
+            </button>
+            <p class="status-text" id="statusText">Ready to download</p>
         </div>
     </div>
+
+    <script>
+        const urlInput = document.getElementById('urlInput');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusText = document.getElementById('statusText');
+
+        urlInput.addEventListener('input', () => {
+            const url = urlInput.value.trim();
+            downloadBtn.disabled = !url;
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (!url) return;
+
+            statusText.textContent = 'Processing...';
+            downloadBtn.disabled = true;
+
+            // Simulate processing
+            setTimeout(() => {
+                statusText.textContent = 'Audio downloaded successfully!';
+                downloadBtn.disabled = false;
+                urlInput.value = '';
+            }, 2000);
+        });
+
+        // Toggle control buttons
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+            });
+        });
+    </script>
 </body>
 </html> 
