@@ -500,18 +500,11 @@
             loadingSpinner.classList.add('active');
 
             try {
-                const response = await fetch(`/api/gallery/images?page=${page}&limit=20${tags ? `&tags=${tags}` : ''}`, {
+                const response = await fetch(`/api/gallery?page=${page}&limit=20${tags ? `&tags=${tags}` : ''}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`
                     }
                 });
-
-                let data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    throw new Error('Invalid server response');
-                }
 
                 if (!response.ok) {
                     if (response.status === 401) {
@@ -522,9 +515,10 @@
                         window.location.href = '/auth';
                         return;
                     }
-                    throw new Error(data?.error || 'Failed to load images');
+                    throw new Error(await response.text() || 'Failed to load images');
                 }
 
+                const data = await response.json();
                 const galleryGrid = document.getElementById('galleryGrid');
                 galleryGrid.innerHTML = '';
 
@@ -545,7 +539,7 @@
                     totalPages = data.totalPages || 1;
                     updatePagination();
                 } else {
-                    console.warn('No images data in response:', data);
+                    throw new Error('Invalid response format');
                 }
 
             } catch (error) {
@@ -654,20 +648,13 @@
             submitBtn.textContent = 'Uploading...';
 
             try {
-                const response = await fetch('/api/gallery/upload', {
+                const response = await fetch('/api/gallery', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`
                     },
                     body: formData
                 });
-
-                let data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    throw new Error('Invalid server response');
-                }
 
                 if (!response.ok) {
                     if (response.status === 401) {
@@ -678,7 +665,12 @@
                         window.location.href = '/auth';
                         return;
                     }
-                    throw new Error(data?.error || 'Upload failed');
+                    throw new Error(await response.text() || 'Upload failed');
+                }
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || 'Upload failed');
                 }
 
                 // Refresh gallery and close modal

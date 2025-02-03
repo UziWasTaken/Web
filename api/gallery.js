@@ -44,23 +44,31 @@ module.exports = async (req, res) => {
         }
 
         // Handle image listing
-        if (req.method === 'GET' && req.url.includes('/api/gallery/images')) {
+        if (req.method === 'GET') {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 20;
-            const tags = req.query.tags ? req.query.tags.split(',') : [];
+            const tags = req.query.tags ? req.query.tags.split(' ') : [];
             const offset = (page - 1) * limit;
 
             let query = supabase
                 .from('images')
-                .select('*', { count: 'exact' })
-                .order('created_at', { ascending: false })
-                .range(offset, offset + limit - 1);
+                .select('*', { count: 'exact' });
 
             if (tags.length > 0) {
                 query = query.contains('tags', tags);
             }
 
-            const { data: images, error: dbError, count } = await query;
+            // Get total count first
+            const { count, error: countError } = await query;
+            
+            if (countError) {
+                throw countError;
+            }
+
+            // Then get paginated results
+            const { data: images, error: dbError } = await query
+                .order('created_at', { ascending: false })
+                .range(offset, offset + limit - 1);
 
             if (dbError) {
                 throw dbError;
@@ -75,7 +83,7 @@ module.exports = async (req, res) => {
         }
 
         // Handle image upload
-        if (req.method === 'POST' && req.url.includes('/api/gallery/upload')) {
+        if (req.method === 'POST') {
             try {
                 // Parse multipart form data
                 await uploadMiddleware(req, res);
@@ -102,13 +110,9 @@ module.exports = async (req, res) => {
                 }
 
                 // Get public URL
-                const { data: { publicUrl }, error: urlError } = supabase.storage
+                const { data: { publicUrl } } = supabase.storage
                     .from('gallery')
                     .getPublicUrl(`public/${filename}`);
-
-                if (urlError) {
-                    throw urlError;
-                }
 
                 // Store in database
                 const { data: dbData, error: dbError } = await supabase
