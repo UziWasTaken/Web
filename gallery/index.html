@@ -428,7 +428,13 @@
                 const response = await fetch(`/api/gallery/images?page=${page}&limit=20${tags ? `&tags=${tags}` : ''}`, {
                     headers: authHeader
                 });
-                const data = await response.json();
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error('Invalid server response');
+                }
 
                 if (!response.ok) {
                     if (response.status === 401) {
@@ -438,31 +444,36 @@
                         window.location.href = '/auth';
                         return;
                     }
-                    throw new Error(data.error || 'Failed to load images');
+                    throw new Error(data?.error || 'Failed to load images');
                 }
 
                 const galleryGrid = document.getElementById('galleryGrid');
                 galleryGrid.innerHTML = '';
 
-                data.images.forEach(image => {
-                    const item = document.createElement('div');
-                    item.className = 'gallery-item';
-                    item.innerHTML = `
-                        <img src="${image.url}" alt="Gallery item">
-                        <div class="tags">
-                            ${image.tags.map(tag => `<span class="tag-pill">${tag}</span>`).join('')}
-                        </div>
-                    `;
-                    galleryGrid.appendChild(item);
-                });
+                if (data.images && Array.isArray(data.images)) {
+                    data.images.forEach(image => {
+                        const item = document.createElement('div');
+                        item.className = 'gallery-item';
+                        item.innerHTML = `
+                            <img src="${image.url}" alt="Gallery item">
+                            <div class="tags">
+                                ${(image.tags || []).map(tag => `<span class="tag-pill">${tag}</span>`).join('')}
+                            </div>
+                        `;
+                        galleryGrid.appendChild(item);
+                    });
 
-                currentPage = data.page;
-                totalPages = data.totalPages;
-                updatePagination();
+                    currentPage = data.page || 1;
+                    totalPages = data.totalPages || 1;
+                    updatePagination();
+                } else {
+                    console.warn('No images data in response:', data);
+                }
 
             } catch (error) {
                 console.error('Error loading images:', error);
-                // Show error message to user
+                const galleryGrid = document.getElementById('galleryGrid');
+                galleryGrid.innerHTML = `<div style="color: #ef4444; padding: 1rem;">${error.message}</div>`;
             } finally {
                 loadingSpinner.classList.remove('active');
                 isLoading = false;
@@ -546,8 +557,13 @@
             const fileInput = e.target.querySelector('input[type="file"]');
             const file = fileInput.files[0];
             const tagArray = Array.from(tags).filter(Boolean);
+            const errorEl = document.createElement('div');
+            errorEl.className = 'error-message';
+            e.target.appendChild(errorEl);
 
             if (!file || !tagArray.length) {
+                errorEl.textContent = 'Please select a file and add at least one tag';
+                errorEl.classList.add('active');
                 return;
             }
 
@@ -564,7 +580,12 @@
                     body: formData
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error('Invalid server response');
+                }
 
                 if (!response.ok) {
                     if (response.status === 401) {
@@ -574,7 +595,7 @@
                         window.location.href = '/auth';
                         return;
                     }
-                    throw new Error(data.error || 'Upload failed');
+                    throw new Error(data?.error || 'Upload failed');
                 }
 
                 // Refresh gallery and close modal
@@ -583,7 +604,8 @@
 
             } catch (error) {
                 console.error('Upload error:', error);
-                // Show error message to user
+                errorEl.textContent = error.message;
+                errorEl.classList.add('active');
             }
         });
 

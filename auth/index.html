@@ -251,10 +251,15 @@
                     })
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error('Invalid server response');
+                }
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to sign in');
+                    throw new Error(data?.error || 'Failed to sign in');
                 }
 
                 // Store session
@@ -296,10 +301,15 @@
                     })
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error('Invalid server response');
+                }
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to sign up');
+                    throw new Error(data?.error || 'Failed to sign up');
                 }
 
                 successEl.textContent = 'Successfully signed up! Please check your email for verification.';
