@@ -1,19 +1,55 @@
 const { createClient } = require('@supabase/supabase-js');
-const multer = require('multer');
 
 // Initialize Supabase client
 const supabaseUrl = 'https://wxyrrhgxrtrmpqmrljih.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Configure multer for memory storage
-const storage = multer.memoryStorage();
-const upload = multer({
-    storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    }
-});
+// Helper function to parse multipart form data
+async function parseFormData(req) {
+    return new Promise((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => {
+            data += chunk;
+        });
+        req.on('end', () => {
+            try {
+                // Find the boundary from Content-Type header
+                const boundary = req.headers['content-type'].split('boundary=')[1];
+                const parts = data.split('--' + boundary);
+                const result = { fields: {}, files: {} };
+
+                parts.forEach(part => {
+                    if (part.includes('Content-Disposition: form-data;')) {
+                        const lines = part.split('\r\n');
+                        const header = lines[1];
+                        const content = lines.slice(4).join('\r\n').trim();
+
+                        if (header.includes('filename')) {
+                            // This is a file
+                            const name = header.match(/name="([^"]+)"/)[1];
+                            const filename = header.match(/filename="([^"]+)"/)[1];
+                            const contentType = lines[2].split(': ')[1];
+                            result.files[name] = {
+                                filename,
+                                contentType,
+                                content: Buffer.from(content, 'binary')
+                            };
+                        } else {
+                            // This is a field
+                            const name = header.match(/name="([^"]+)"/)[1];
+                            result.fields[name] = content;
+                        }
+                    }
+                });
+
+                resolve(result);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
+}
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -72,69 +108,61 @@ module.exports = async (req, res) => {
 
         // Handle POST request (upload image)
         if (req.method === 'POST') {
-            return new Promise((resolve, reject) => {
-                upload.single('image')(req, res, async (err) => {
-                    if (err) {
-                        console.error('Upload error:', err);
-                        return resolve(res.status(400).json({ 
-                            error: err.message || 'Failed to process upload'
-                        }));
-                    }
+            try {
+                const formData = await parseFormData(req);
+                
+                if (!formData.files.image) {
+                    throw new Error('No image file provided');
+                }
 
-                    try {
-                        if (!req.file) {
-                            throw new Error('No image file provided');
-                        }
+                const file = formData.files.image;
+                const tags = JSON.parse(formData.fields.tags || '[]');
+                const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-                        const tags = JSON.parse(req.body.tags || '[]');
-                        const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                // Upload to Supabase Storage
+                const { error: uploadError } = await supabase.storage
+                    .from('gallery')
+                    .upload(`public/${filename}`, file.content, {
+                        contentType: file.contentType,
+                        upsert: false
+                    });
 
-                        // Upload to Supabase Storage
-                        const { error: uploadError } = await supabase.storage
-                            .from('gallery')
-                            .upload(`public/${filename}`, req.file.buffer, {
-                                contentType: req.file.mimetype,
-                                upsert: false
-                            });
+                if (uploadError) {
+                    throw uploadError;
+                }
 
-                        if (uploadError) {
-                            throw uploadError;
-                        }
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('gallery')
+                    .getPublicUrl(`public/${filename}`);
 
-                        // Get public URL
-                        const { data: { publicUrl } } = supabase.storage
-                            .from('gallery')
-                            .getPublicUrl(`public/${filename}`);
+                // Store in database
+                const { data: image, error: dbError } = await supabase
+                    .from('images')
+                    .insert([{
+                        filename,
+                        url: publicUrl,
+                        tags,
+                        user_id: user.id,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
 
-                        // Store in database
-                        const { data: image, error: dbError } = await supabase
-                            .from('images')
-                            .insert([{
-                                filename,
-                                url: publicUrl,
-                                tags,
-                                user_id: user.id,
-                                created_at: new Date().toISOString()
-                            }])
-                            .select()
-                            .single();
+                if (dbError) {
+                    throw dbError;
+                }
 
-                        if (dbError) {
-                            throw dbError;
-                        }
-
-                        resolve(res.status(200).json({
-                            success: true,
-                            image
-                        }));
-                    } catch (error) {
-                        console.error('Upload processing error:', error);
-                        resolve(res.status(500).json({ 
-                            error: error.message || 'Failed to process upload'
-                        }));
-                    }
+                return res.status(200).json({
+                    success: true,
+                    image
                 });
-            });
+            } catch (error) {
+                console.error('Upload processing error:', error);
+                return res.status(500).json({ 
+                    error: error.message || 'Failed to process upload'
+                });
+            }
         }
 
         // Handle unknown methods
