@@ -313,15 +313,21 @@
             const loading = document.getElementById('loading');
             const videoInfo = document.getElementById('videoInfo');
             
-            if (!url) return;
+            if (!url) {
+                alert('Please enter a YouTube URL');
+                return;
+            }
 
             loading.classList.add('active');
             videoInfo.classList.remove('active');
 
             try {
-                // This would be your backend API endpoint
                 const response = await fetch('/api/youtube/info?url=' + encodeURIComponent(url));
                 const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error fetching video information');
+                }
 
                 document.getElementById('thumbnail').src = data.thumbnail;
                 document.getElementById('videoTitle').textContent = data.title;
@@ -332,7 +338,7 @@
                 loading.classList.remove('active');
                 videoInfo.classList.add('active');
             } catch (error) {
-                alert('Error fetching video information');
+                alert(error.message || 'Error fetching video information');
                 loading.classList.remove('active');
             }
         }
