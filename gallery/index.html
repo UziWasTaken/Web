@@ -109,7 +109,7 @@
 
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 1rem;
             padding: 1rem;
         }
@@ -121,6 +121,7 @@
             border-radius: 0.5rem;
             background: rgba(30, 41, 59, 0.5);
             transition: transform 0.3s ease;
+            cursor: pointer;
         }
 
         .gallery-item:hover {
@@ -131,6 +132,103 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .gallery-item .tags {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .gallery-item:hover .tags {
+            opacity: 1;
+        }
+
+        .tag-pill {
+            background: rgba(99, 102, 241, 0.5);
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .loading-spinner.active {
+            display: flex;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .pagination button {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.5);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #uploadForm {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .preview-container {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        .preview-container.active {
+            display: block;
+        }
+
+        .preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
         }
 
         .upload-modal {
@@ -258,28 +356,36 @@
 
     <div class="container">
         <div class="search-bar">
-            <input type="text" class="search-input" placeholder="Search by tags (e.g., character, artist, style)">
+            <input type="text" class="search-input" placeholder="Search by tags (e.g., character, artist, style)" onkeyup="handleSearch(event)">
         </div>
 
-        <div class="gallery-grid" id="galleryGrid">
-            <!-- Gallery items will be dynamically loaded here -->
+        <div class="gallery-grid" id="galleryGrid"></div>
+        
+        <div class="loading-spinner" id="loadingSpinner">
+            <i class="fas fa-circle-notch fa-spin fa-2x"></i>
         </div>
+
+        <div class="pagination" id="pagination"></div>
     </div>
 
     <div class="upload-modal" id="uploadModal">
         <form class="upload-form" id="uploadForm">
             <h2>Upload Image</h2>
             
+            <div class="preview-container" id="previewContainer">
+                <img id="imagePreview" alt="Preview">
+            </div>
+
             <div class="form-group">
                 <label>Select Image</label>
-                <input type="file" accept="image/*" required>
+                <input type="file" accept="image/*" required onchange="handleImageSelect(event)">
+                <div class="error-message" id="fileError"></div>
             </div>
 
             <div class="form-group">
                 <label>Tags (separated by space)</label>
-                <div class="tag-input" id="tagInput">
-                    <!-- Tags will be added here -->
-                </div>
+                <div class="tag-input" id="tagInput"></div>
+                <div class="error-message" id="tagError"></div>
             </div>
 
             <div class="form-buttons">
@@ -290,6 +396,197 @@
     </div>
 
     <script>
+        // Check authentication
+        const session = JSON.parse(localStorage.getItem('session'));
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!session || !user) {
+            window.location.href = '/auth';
+        }
+
+        // Add authentication header to all requests
+        const authHeader = {
+            'Authorization': `Bearer ${session?.access_token}`
+        };
+
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentTags = '';
+        let isLoading = false;
+
+        // Load initial images
+        loadImages();
+
+        async function loadImages(page = 1, tags = '') {
+            if (isLoading) return;
+            isLoading = true;
+
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.classList.add('active');
+
+            try {
+                const response = await fetch(`/api/gallery/images?page=${page}&limit=20${tags ? `&tags=${tags}` : ''}`, {
+                    headers: authHeader
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        // Session expired
+                        localStorage.removeItem('session');
+                        localStorage.removeItem('user');
+                        window.location.href = '/auth';
+                        return;
+                    }
+                    throw new Error(data.error || 'Failed to load images');
+                }
+
+                const galleryGrid = document.getElementById('galleryGrid');
+                galleryGrid.innerHTML = '';
+
+                data.images.forEach(image => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    item.innerHTML = `
+                        <img src="${image.url}" alt="Gallery item">
+                        <div class="tags">
+                            ${image.tags.map(tag => `<span class="tag-pill">${tag}</span>`).join('')}
+                        </div>
+                    `;
+                    galleryGrid.appendChild(item);
+                });
+
+                currentPage = data.page;
+                totalPages = data.totalPages;
+                updatePagination();
+
+            } catch (error) {
+                console.error('Error loading images:', error);
+                // Show error message to user
+            } finally {
+                loadingSpinner.classList.remove('active');
+                isLoading = false;
+            }
+        }
+
+        function updatePagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            // Previous button
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevButton.disabled = currentPage === 1;
+            prevButton.onclick = () => loadImages(currentPage - 1, currentTags);
+            pagination.appendChild(prevButton);
+
+            // Page numbers
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.disabled = i === currentPage;
+                pageButton.onclick = () => loadImages(i, currentTags);
+                pagination.appendChild(pageButton);
+            }
+
+            // Next button
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.onclick = () => loadImages(currentPage + 1, currentTags);
+            pagination.appendChild(nextButton);
+        }
+
+        let searchTimeout;
+        function handleSearch(event) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentTags = event.target.value.trim();
+                loadImages(1, currentTags);
+            }, 500);
+        }
+
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const previewContainer = document.getElementById('previewContainer');
+            const imagePreview = document.getElementById('imagePreview');
+            const fileError = document.getElementById('fileError');
+
+            // Validate file type and size
+            if (!file.type.startsWith('image/')) {
+                fileError.textContent = 'Please select an image file';
+                fileError.classList.add('active');
+                previewContainer.classList.remove('active');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                fileError.textContent = 'Image size should be less than 5MB';
+                fileError.classList.add('active');
+                previewContainer.classList.remove('active');
+                return;
+            }
+
+            fileError.classList.remove('active');
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                previewContainer.classList.add('active');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fileInput = e.target.querySelector('input[type="file"]');
+            const file = fileInput.files[0];
+            const tagArray = Array.from(tags).filter(Boolean);
+
+            if (!file || !tagArray.length) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('tags', JSON.stringify(tagArray));
+
+            try {
+                const response = await fetch('/api/gallery/upload', {
+                    method: 'POST',
+                    headers: {
+                        ...authHeader
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        // Session expired
+                        localStorage.removeItem('session');
+                        localStorage.removeItem('user');
+                        window.location.href = '/auth';
+                        return;
+                    }
+                    throw new Error(data.error || 'Upload failed');
+                }
+
+                // Refresh gallery and close modal
+                hideUploadModal();
+                loadImages(1, currentTags);
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                // Show error message to user
+            }
+        });
+
         function showUploadModal() {
             document.getElementById('uploadModal').style.display = 'flex';
         }
@@ -350,23 +647,26 @@
             tags.delete(tagText);
         }
 
-        // Mock function to load gallery items (replace with actual API call)
-        function loadGalleryItems() {
-            const galleryGrid = document.getElementById('galleryGrid');
-            // This is where you'll fetch and display actual images
-            // For now, we'll add placeholder items
-            for (let i = 0; i < 20; i++) {
-                const item = document.createElement('div');
-                item.className = 'gallery-item';
-                item.innerHTML = `
-                    <img src="https://via.placeholder.com/200" alt="Gallery item">
-                `;
-                galleryGrid.appendChild(item);
+        // Add sign out button to navbar
+        const navbar = document.querySelector('.navbar');
+        const signOutBtn = document.createElement('button');
+        signOutBtn.className = 'upload-btn';
+        signOutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Sign Out';
+        signOutBtn.onclick = async () => {
+            try {
+                await fetch('/api/auth/signout', {
+                    method: 'POST',
+                    headers: authHeader
+                });
+            } catch (error) {
+                console.error('Sign out error:', error);
+            } finally {
+                localStorage.removeItem('session');
+                localStorage.removeItem('user');
+                window.location.href = '/auth';
             }
-        }
-
-        // Load initial gallery items
-        loadGalleryItems();
+        };
+        navbar.appendChild(signOutBtn);
     </script>
 </body>
 </html> 

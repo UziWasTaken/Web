@@ -2,14 +2,39 @@
     "version": 2,
     "routes": [
         {
-            "src": "/api/youtube/info",
-            "methods": ["GET"],
-            "dest": "/api/youtube.js"
+            "src": "/api/auth/signup",
+            "methods": ["POST"],
+            "dest": "/api/auth.js"
         },
         {
-            "src": "/api/youtube/download",
+            "src": "/api/auth/signin",
+            "methods": ["POST"],
+            "dest": "/api/auth.js"
+        },
+        {
+            "src": "/api/auth/signout",
+            "methods": ["POST"],
+            "dest": "/api/auth.js"
+        },
+        {
+            "src": "/api/auth/user",
             "methods": ["GET"],
-            "dest": "/api/youtube.js"
+            "dest": "/api/auth.js"
+        },
+        {
+            "src": "/api/gallery/upload",
+            "methods": ["POST"],
+            "dest": "/api/gallery.js"
+        },
+        {
+            "src": "/api/gallery/images",
+            "methods": ["GET"],
+            "dest": "/api/gallery.js"
+        },
+        {
+            "src": "/api/gallery/delete",
+            "methods": ["DELETE"],
+            "dest": "/api/gallery.js"
         },
         {
             "src": "/gallery",
@@ -26,6 +51,10 @@
         {
             "src": "/about",
             "dest": "/about/index.html"
+        },
+        {
+            "src": "/auth",
+            "dest": "/auth/index.html"
         },
         {
             "src": "/(.*)",

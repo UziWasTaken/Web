@@ -1,18 +1,19 @@
 {
-  "name": "youtube-audio-downloader",
+  "name": "r34cat-online",
   "version": "1.0.0",
-  "description": "YouTube Audio Downloader with YouTube Data API",
+  "description": "r34cat.online website",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
+    "@supabase/supabase-js": "^2.39.3",
     "express": "^4.18.2",
-    "googleapis": "^126.0.1"
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.3"
   }
 } 
