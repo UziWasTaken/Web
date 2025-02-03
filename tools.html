@@ -322,7 +322,11 @@
             videoInfo.classList.remove('active');
 
             try {
-                const response = await fetch(`/api/youtube/info?url=${encodeURIComponent(url)}`, {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? `http://localhost:3000/api/youtube/info?url=${encodeURIComponent(url)}`
+                    : `/api/youtube/info?url=${encodeURIComponent(url)}`;
+
+                const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
@@ -330,24 +334,28 @@
                     }
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Error fetching video information');
+                    throw new Error(data.error || 'Error fetching video information');
                 }
 
-                const data = await response.json();
-                document.getElementById('thumbnail').src = data.thumbnail;
-                document.getElementById('videoTitle').textContent = data.title;
-                document.getElementById('channelName').textContent = data.channel;
-                document.getElementById('duration').textContent = formatDuration(data.duration);
-                document.getElementById('viewCount').textContent = formatNumber(data.view_count) + ' views';
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid response from server');
+                }
+
+                document.getElementById('thumbnail').src = data.thumbnail || '';
+                document.getElementById('videoTitle').textContent = data.title || 'Untitled';
+                document.getElementById('channelName').textContent = data.channel || 'Unknown Channel';
+                document.getElementById('duration').textContent = data.duration ? formatDuration(data.duration) : '--:--';
+                document.getElementById('viewCount').textContent = data.view_count ? formatNumber(data.view_count) + ' views' : '0 views';
 
                 loading.classList.remove('active');
                 videoInfo.classList.add('active');
             } catch (error) {
                 console.error('Error:', error);
-                alert(error.message || 'Error fetching video information');
                 loading.classList.remove('active');
+                alert(error.message || 'Error fetching video information. Please check your API key and try again.');
             }
         }
 

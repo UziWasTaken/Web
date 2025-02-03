@@ -19,18 +19,5 @@
             "src": "/(.*)",
             "dest": "/index.html"
         }
-    ],
-    "builds": [
-        {
-            "src": "*.html",
-            "use": "@vercel/static"
-        },
-        {
-            "src": "assets/**",
-            "use": "@vercel/static"
-        }
-    ],
-    "buildCommand": "next build",
-    "framework": "nextjs",
-    "outputDirectory": ".next"
+    ]
 } 
