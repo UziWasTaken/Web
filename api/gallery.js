@@ -1,10 +1,23 @@
 const { createClient } = require('@supabase/supabase-js');
+const multer = require('multer');
+const util = require('util');
 
 // Initialize Supabase client
 const supabaseUrl = 'https://wxyrrhgxrtrmpqmrljih.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4eXJyaGd4cnRybXBxbXJsamloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDk2NTksImV4cCI6MjA1NDEyNTY1OX0.UpolAYjTGn3d8_RyTI16moca_7liYZfLHIS7t4a4tGg';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Configure multer for memory storage
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+});
+
+// Promisify multer middleware
+const uploadMiddleware = util.promisify(upload.single('image'));
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -63,57 +76,68 @@ module.exports = async (req, res) => {
 
         // Handle image upload
         if (req.method === 'POST' && req.url.includes('/api/gallery/upload')) {
-            const { image, tags } = req.body;
+            try {
+                // Parse multipart form data
+                await uploadMiddleware(req, res);
+                
+                if (!req.file) {
+                    return res.status(400).json({ error: 'No image file provided' });
+                }
 
-            if (!image) {
-                return res.status(400).json({ error: 'No image provided' });
-            }
+                const tags = JSON.parse(req.body.tags || '[]');
 
-            // Generate unique filename
-            const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-            
-            // Upload to Supabase Storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('gallery')
-                .upload(`public/${filename}`, image, {
-                    contentType: image.type,
-                    upsert: false
+                // Generate unique filename
+                const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                
+                // Upload to Supabase Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('gallery')
+                    .upload(`public/${filename}`, req.file.buffer, {
+                        contentType: req.file.mimetype,
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    throw uploadError;
+                }
+
+                // Get public URL
+                const { data: { publicUrl }, error: urlError } = supabase.storage
+                    .from('gallery')
+                    .getPublicUrl(`public/${filename}`);
+
+                if (urlError) {
+                    throw urlError;
+                }
+
+                // Store in database
+                const { data: dbData, error: dbError } = await supabase
+                    .from('images')
+                    .insert([{
+                        filename,
+                        url: publicUrl,
+                        tags: tags,
+                        user_id: user.id,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
+
+                if (dbError) {
+                    throw dbError;
+                }
+
+                return res.status(200).json({
+                    success: true,
+                    image: dbData
                 });
-
-            if (uploadError) {
-                throw uploadError;
+            } catch (error) {
+                console.error('Upload error:', error);
+                return res.status(500).json({ 
+                    error: 'Failed to upload image',
+                    details: error.message
+                });
             }
-
-            // Get public URL
-            const { data: { publicUrl }, error: urlError } = supabase.storage
-                .from('gallery')
-                .getPublicUrl(`public/${filename}`);
-
-            if (urlError) {
-                throw urlError;
-            }
-
-            // Store in database
-            const { data: dbData, error: dbError } = await supabase
-                .from('images')
-                .insert([{
-                    filename,
-                    url: publicUrl,
-                    tags: tags || [],
-                    user_id: user.id,
-                    created_at: new Date().toISOString()
-                }])
-                .select()
-                .single();
-
-            if (dbError) {
-                throw dbError;
-            }
-
-            return res.status(200).json({
-                success: true,
-                image: dbData
-            });
         }
 
         // Handle image deletion

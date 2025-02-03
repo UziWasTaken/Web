@@ -649,6 +649,10 @@
             formData.append('image', file);
             formData.append('tags', JSON.stringify(tagArray));
 
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading...';
+
             try {
                 const response = await fetch('/api/gallery/upload', {
                     method: 'POST',
@@ -685,6 +689,9 @@
                 console.error('Upload error:', error);
                 errorEl.textContent = error.message;
                 errorEl.classList.add('active');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload';
             }
         });
 
